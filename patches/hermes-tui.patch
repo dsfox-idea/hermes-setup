@@ -707,7 +707,7 @@ index 4f36dff1c0..1c1831bae0 100644
          <Text color={t.color.accent}>ask</Text>
          <Text color={t.color.text}>
 diff --git a/ui-tui/src/components/textInput.tsx b/ui-tui/src/components/textInput.tsx
-index daca6ae643..eea2366cc2 100644
+index daca6ae643..ee41039309 100644
 --- a/ui-tui/src/components/textInput.tsx
 +++ b/ui-tui/src/components/textInput.tsx
 @@ -3,6 +3,7 @@ import * as Ink from '@hermes/ink'
@@ -718,7 +718,20 @@ index daca6ae643..eea2366cc2 100644
  import { highlightMask, highlightsStable } from '../domain/composerHighlights.js'
  import { readClipboardText, writeClipboardText } from '../lib/clipboard.js'
  import { cursorLayout, offsetFromPosition } from '../lib/inputMetrics.js'
-@@ -1355,7 +1356,7 @@ export function TextInput({
+@@ -275,6 +276,12 @@ export function shouldPreserveCtrlJNewline(env: MinimalEnv = process.env): boole
+     return true
+   }
+ 
++  // Warp sends Enter as CR and Shift+Enter as LF when the kitty keyboard
++  // protocol is not active (always the case on Windows).
++  if (env.TERM_PROGRAM === 'WarpTerminal') {
++    return true
++  }
++
+   return (env.WSL_DISTRO_NAME ?? '').toLowerCase().includes('microsoft')
+ }
+ 
+@@ -1355,7 +1362,7 @@ export function TextInput({
      const normalized = selRange()
  
      if (isMac && normalized) {
@@ -918,6 +931,45 @@ index 2510907a49..1edb6aa41c 100644
      readonly copySelection: () => Promise<string>
      readonly copySelectionNoClear: () => Promise<string>
      readonly clearSelection: () => void
+diff --git a/ui-tui/src/__tests__/textInputPassThrough.test.ts b/ui-tui/src/__tests__/textInputPassThrough.test.ts
+index ff8c29ebcd..7efead27e6 100644
+--- a/ui-tui/src/__tests__/textInputPassThrough.test.ts
++++ b/ui-tui/src/__tests__/textInputPassThrough.test.ts
+@@ -1,6 +1,10 @@
+-import { describe, expect, it } from 'vitest'
++import { describe, expect, it, vi } from 'vitest'
+ 
+-import { shouldPassThroughToGlobalHandler, shouldPreserveCtrlJNewline } from '../components/textInput.js'
++import {
++  shouldInsertNewlineOnReturn,
++  shouldPassThroughToGlobalHandler,
++  shouldPreserveCtrlJNewline
++} from '../components/textInput.js'
+ import { DEFAULT_VOICE_RECORD_KEY, parseVoiceRecordKey } from '../lib/platform.js'
+ 
+ const key = (overrides: Record<string, unknown> = {}) => ({ ctrl: false, meta: false, ...overrides }) as any
+@@ -16,6 +20,21 @@ describe('shouldPreserveCtrlJNewline', () => {
+     ).toBe(true)
+   })
+ 
++  it('treats LF as a newline in Warp, which sends Shift+Enter as LF', () => {
++    expect(shouldPreserveCtrlJNewline({ TERM_PROGRAM: 'WarpTerminal' })).toBe(true)
++  })
++
++  it('in Warp, Shift+Enter (LF) inserts a newline and Enter (CR) submits', () => {
++    vi.stubEnv('TERM_PROGRAM', 'WarpTerminal')
++
++    try {
++      expect(shouldInsertNewlineOnReturn(key({ return: true }), '\n')).toBe(true)
++      expect(shouldInsertNewlineOnReturn(key({ return: true }), '\r')).toBe(false)
++    } finally {
++      vi.unstubAllEnvs()
++    }
++  })
++
+   it('keeps bare local POSIX LF-compatible prompts submitting on Ctrl+J', () => {
+     expect(shouldPreserveCtrlJNewline({ TERM: 'xterm-256color' })).toBe(false)
+   })
 diff --git a/ui-tui/src/__tests__/activityStatus.test.ts b/ui-tui/src/__tests__/activityStatus.test.ts
 new file mode 100644
 index 0000000000..8b01c54210

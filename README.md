@@ -50,7 +50,7 @@ For every profile (`default` and each one under `profiles/`) the script:
 
 1. copies the skin into `<profile>/skins/` and runs `hermes skin use dsfox-skin`;
 2. sets `display.interface tui` and `display.tui_compact true`;
-3. builds the patched TUI into `<Hermes home>/tui-overlay/ui-tui` and points
+3. builds the patched TUI into `<Hermes home>/tui-overlay/ui-tui-<version>` and points
    Hermes at it with `HERMES_TUI_DIR` in the profile's `.env`;
 4. sets `display.tui_status_indicator activity`;
 5. installs the `tui-overlay` gateway hook into `<Hermes home>/hooks/`.
@@ -119,6 +119,7 @@ the hook. Backups from `--skill` stay in `<profile>/backups/`.
 | Platform | Note |
 | --- | --- |
 | Windows | Hermes refuses to modify its own running checkout; this setup never does. The build links Node dependencies with NTFS junctions. |
+| Warp | Shift+Enter inserts a newline (Warp sends it as LF; the patch treats LF as newline under `TERM_PROGRAM=WarpTerminal`). |
 | macOS | Terminals inside IDEs or agents may export `PYTHONPATH` or `NODE_ENV`; `-I` keeps `PYTHONPATH` out of the run, and Terminal.app or iTerm avoids both. |
 | Linux | Same commands as macOS. Not yet exercised on Linux. |
 

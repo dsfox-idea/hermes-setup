@@ -86,13 +86,19 @@ class TuiOverlay:
         self.install = install
         self.patch = patch
         self.root = install.home / "tui-overlay"
-        self.product = self.root / "ui-tui"
         self.source = self.root / "source"
         self.state_file = self.root / "overlay.json"
 
     def wanted(self) -> dict:
         return {"hermes_commit": self.install.head(),
                 "patch_sha256": hashlib.sha256(self.patch.read_bytes()).hexdigest()}
+
+    @property
+    def product(self) -> Path:
+        # One directory per build: a running TUI keeps its product directory as its
+        # working directory, and Windows cannot rename or delete a directory in use.
+        wanted = self.wanted()
+        return self.root / f"ui-tui-{wanted['hermes_commit'][:10]}-{wanted['patch_sha256'][:10]}"
 
     def current(self) -> bool:
         try:
@@ -105,6 +111,7 @@ class TuiOverlay:
         if self.current():
             log.info("overlay is current for %s", self.wanted()["hermes_commit"][:10])
             self.install.set_env(str(self.product))
+            self.prune()
             return 0
         # A stale bundle must never run against a newer gateway: fall back first.
         self.install.set_env("")
@@ -114,7 +121,24 @@ class TuiOverlay:
             log.exception("overlay build failed; Hermes stays on its stock TUI")
             return 1
         self.install.set_env(str(self.product))
+        self.prune()
         return 0
+
+    def prune(self) -> None:
+        """Remove older products; one still used by an open TUI window stays until a later run."""
+        for leftover in self.root.glob(".trash-*"):
+            shutil.rmtree(leftover, ignore_errors=True)
+        for path in self.root.glob("ui-tui*"):
+            if path == self.product or not path.is_dir():
+                continue
+            trash = self.root / f".trash-{path.name}"
+            try:
+                # Windows refuses to rename a directory a running process uses.
+                path.rename(trash)
+            except OSError:
+                log.info("keeping %s: still in use", path.name)
+                continue
+            shutil.rmtree(trash, ignore_errors=True)
 
     def build(self) -> None:
         wanted = self.wanted()

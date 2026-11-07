@@ -151,13 +151,13 @@ Use the `hermes-setup` repository's installer; it covers every profile and keeps
 
 ### How the patched TUI is installed (overlay, checkout stays clean)
 
-`patches/hermes-tui.patch` is gated by `git apply --check` on the live HEAD, not by the base sha in `upstream.json`. `scripts/tui_overlay.py` clones the live checkout `--shared` at its exact HEAD, applies the patch, links `node_modules` from the checkout (an NTFS junction on Windows), builds `scripts/build/tui.mjs --out <home>/tui-overlay/ui-tui`, runs `node --check` and sets `HERMES_TUI_DIR` in every profile's `.env`.
+`patches/hermes-tui.patch` is gated by `git apply --check` on the live HEAD, not by the base sha in `upstream.json`. `scripts/tui_overlay.py` clones the live checkout `--shared` at its exact HEAD, applies the patch, links `node_modules` from the checkout (an NTFS junction on Windows), builds `scripts/build/tui.mjs --out <home>/tui-overlay/ui-tui-<commit>-<patch sha>` (one directory per build: Windows cannot replace a directory an open TUI window runs from; older builds are pruned once free), runs `node --check` and sets `HERMES_TUI_DIR` in every profile's `.env`.
 
 Why this path: on Windows Hermes refuses git writes in its own running checkout (`tools/self_repo_guard.py`, NTFS locks loaded files), and a gateway-run `hermes update` stashes local edits and does not restore them by default. The `tui-overlay` gateway hook re-runs `ensure` on every `gateway:startup` (i.e. after `hermes update`): on a changed HEAD or patch it first clears `HERMES_TUI_DIR`, then rebuilds; if the patch no longer applies the stock TUI stays and the reason is in `<home>/hooks/tui-overlay/last-run.log`.
 
 - Gateway hook `handler.py` may import only stdlib and Hermes modules: it loads in the gateway's interpreter, which may lack PyYAML. Keep per-machine data in a sidecar file (`setup-repo.txt`), not in `HOOK.yaml`. Test a hook without a restart: `gateway.hooks.HookRegistry().discover_and_load()` then `asyncio.run(r.emit('gateway:startup', {'platforms': []}))`.
 - Before changing the patch, prove it on a scratch `git clone --shared` of the live checkout: `git apply --check`, `npm run typecheck` in `ui-tui`, vitest with a scratch config aliasing `@hermes/ink` to `packages/hermes-ink/src/entry-exports.ts` (the package's `dist/` is not built in launcher installs, so most suites fail on import otherwise).
-- Prove adoption: start `hermes --tui` and check that the new node process runs `tui-overlay/ui-tui/dist/entry.js`; already-open windows keep the old bundle.
+- Prove adoption: start `hermes --tui` and check that the new node process runs `tui-overlay/ui-tui-*/dist/entry.js`; already-open windows keep the old bundle.
 
 ## Pitfalls
 

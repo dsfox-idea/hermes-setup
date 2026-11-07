@@ -18,7 +18,8 @@ message backgrounds, choice cards and `activity` indicator need the patch.
 - Hermes Agent installed with the official installer (a git checkout under the
   Hermes home), started at least once in TUI mode (`hermes --tui`) so its Node
   dependencies exist.
-- `git` and Python 3.10+.
+- `hermes` on `PATH` (the installer calls `hermes skin use` and `hermes config set`).
+- `git` and Python 3.9+ (the macOS system `/usr/bin/python3` is enough).
 
 | Platform | Hermes home | Python command |
 | --- | --- | --- |
@@ -67,6 +68,14 @@ Options, combinable:
 Exit code 1 means the patch does not fit your Hermes version: the skin is
 installed, the stock TUI stays, and the reason is in the output.
 
+Two lines in the output look like errors and are not: `HERMES_TUI_DIR='' in
+profile ...` (the old build is switched off before the new one is made; the path
+is filled in a few seconds later) and the esbuild size warning `entry.js 3.9mb`.
+
+The gateway hook starts working after the next gateway start. Run
+`hermes gateway restart` once, or let the next `hermes update` do it; until then
+an update is not followed by a rebuild.
+
 ## Check
 
 ```sh
@@ -110,7 +119,7 @@ the hook. Backups from `--skill` stay in `<profile>/backups/`.
 | Platform | Note |
 | --- | --- |
 | Windows | Hermes refuses to modify its own running checkout; this setup never does. The build links Node dependencies with NTFS junctions. |
-| macOS | Use a regular terminal. `-I` keeps a `PYTHONPATH` exported by other tools out of the run. |
+| macOS | Terminals inside IDEs or agents may export `PYTHONPATH` or `NODE_ENV`; `-I` keeps `PYTHONPATH` out of the run, and Terminal.app or iTerm avoids both. |
 | Linux | Same commands as macOS. Not yet exercised on Linux. |
 
 ## Other contents

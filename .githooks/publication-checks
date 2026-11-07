@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+remote_name=${1:?Missing remote name}
+remote_url=${2:?Missing remote URL}
+if [[ "$remote_name" != origin ]]; then
+  printf '%s\n' 'Refusing push: only origin is authorized.' >&2
+  exit 1
+fi
+case "$remote_url" in
+  https://github.com/dsfox-idea/hermes-setup.git|https://github.com/dsfox-idea/hermes-setup|git@github.com:dsfox-idea/hermes-setup.git) ;;
+  *) printf '%s\n' 'Refusing push: unexpected destination.' >&2; exit 1 ;;
+esac
+
+command -v gh >/dev/null
+command -v gitleaks >/dev/null
+command -v python3 >/dev/null
+hook_directory=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+visibility=$(gh repo view dsfox-idea/hermes-setup --json visibility --jq .visibility)
+deny_list=
+if [[ "$visibility" == PUBLIC ]]; then
+  # A public tree must not name the owner's machines, addresses or accounts. The list of
+  # those strings lives outside the repository, since committing it would publish them.
+  deny_list=$(git config --local --get publication.denyList || true)
+  if [[ -z "$deny_list" || ! -s "$deny_list" ]]; then
+    printf '%s\n' 'Refusing push: a public repository needs publication.denyList (a local file of strings that must not be published).' >&2
+    exit 1
+  fi
+elif [[ "$visibility" != PRIVATE ]]; then
+  printf '%s\n' "Refusing push: unexpected repository visibility '$visibility'." >&2
+  exit 1
+fi
+
+while read -r local_ref local_sha remote_ref remote_sha; do
+  if [[ "$local_ref" != refs/heads/main || "$remote_ref" != refs/heads/main ]]; then
+    printf '%s\n' 'Refusing push: only the main branch is authorized.' >&2
+    exit 1
+  fi
+  python3 "$hook_directory/../scripts/artifact_policy.py" "$local_sha" "$remote_sha"
+  if [[ -n "$deny_list" ]] && git grep -q -I -F -i -f "$deny_list" "$local_sha" --; then
+    printf '%s\n' 'Refusing push: the outgoing tree contains strings from publication.denyList:' >&2
+    git grep -l -I -F -i -f "$deny_list" "$local_sha" -- >&2
+    exit 1
+  fi
+done
+
+git diff --check
+gitleaks git --redact --no-banner --no-color .

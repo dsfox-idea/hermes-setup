@@ -1,0 +1,30 @@
+model: local:spark-x2.6-4b
+stream: true
+save: false
+save_session: false
+save_shell_history: false
+function_calling: false
+compress_threshold: 0
+repl_prelude: session:temp
+wrap: auto
+left_prompt: '{color.green}spark>{color.reset} '
+right_prompt: ''
+clients:
+  - type: openai-compatible
+    name: local
+    api_base: http://127.0.0.1:18320/v1
+    models:
+      - name: spark-x2.6-4b
+        max_input_tokens: 49152
+        supports_function_calling: false
+    patch:
+      chat_completions:
+        '^spark-x2.6-4b$':
+          body:
+            max_tokens: 4096
+            temperature: 0
+            top_p: 1
+            top_k: 0
+            repeat_penalty: 1
+            chat_template_kwargs:
+              enable_thinking: false

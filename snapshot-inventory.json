@@ -1,0 +1,212 @@
+{
+  "files": {
+    "config.example.json": {
+      "sha256": "e2ae7d3eca7ad7a66369adb6cdfcd15827406d85bcd527553feea8c684fe7f58"
+    },
+    "patches/hermes-tui.patch": {
+      "sha256": "0c661b4512759c4220e5e7268ad990cc0c405e2a76c960464d233fb69e9b956a"
+    },
+    "plugins/honcho/.gitignore": {
+      "sha256": "4cad133d4f0a6cf4bba15f1b8bbae48d6a55f20b94f75487c51a93cc6a5af59f"
+    },
+    "plugins/honcho/.hermes-catalog.json": {
+      "sha256": "691cc1121145904623d210848ff6292605756beb966ec5898c806ae68fd09ee4"
+    },
+    "plugins/honcho/HANDOFF.md": {
+      "sha256": "7f258c8dc2059fb25e6967f75e9c20acb25b76fa25747caceff97afda23b6bd9"
+    },
+    "plugins/honcho/LICENSE": {
+      "sha256": "821556e6336796450ab852d375117b48a4887e71d255794fd6318d99982a5ab6"
+    },
+    "plugins/honcho/README.md": {
+      "sha256": "58c12155dc7fba90dab89b34447049707a0a8e84108e9bee3556d7ff9c38ffdb"
+    },
+    "plugins/honcho/__init__.py": {
+      "sha256": "26187f2d79f0d939513fc8062334db0a2d45c0e9b530b1f0db94b94d3f48a9ce"
+    },
+    "plugins/honcho/_shared_query_rewrite.py": {
+      "sha256": "968aed23fd2a0d6c79866d0ed0c997be0a01b56282c37fece622d50033ca1ca4"
+    },
+    "plugins/honcho/cli.py": {
+      "sha256": "92d7769ae60c1e69568e51a11e38d11e466e581b5503cebca0ea606cb4e2b917"
+    },
+    "plugins/honcho/client.py": {
+      "sha256": "1ac859689b5c177d1686c817d5c4cb767b1b7905124ab0cb146e05d094ea87ce"
+    },
+    "plugins/honcho/client_cache.py": {
+      "sha256": "c4e6b5b6bd615651211fde01084a880022db248c7e466060a0730399d38f20d0"
+    },
+    "plugins/honcho/config_schema.py": {
+      "sha256": "d9c755a50f8b7da8108e27d87826f00dac3d9f9e3c65605340171ecf5983c1c3"
+    },
+    "plugins/honcho/dialectic.py": {
+      "sha256": "6808f2758d99f7bf01f8d12595943069da98e06eb7088a89c507590b366cac5b"
+    },
+    "plugins/honcho/oauth.py": {
+      "sha256": "4c6c1ace252b298a630cf47f6a0f01d33d46e0624bb8960209972057b848dddd"
+    },
+    "plugins/honcho/oauth_flow.py": {
+      "sha256": "bc2d2c77be725c84bae2e0ed66fe45f5ea9119df87999d3c6d50f66bfd493135"
+    },
+    "plugins/honcho/plugin.yaml": {
+      "sha256": "bf592e7539f22d49abd149bd023bc03bd00f9efd574cec1d1c6500c5ad1f8572"
+    },
+    "plugins/honcho/pyproject.toml": {
+      "sha256": "26210f755f59c48544e98f85d07b18f1a9b9a9a1a3c70af857cdf6053b5e48e0"
+    },
+    "plugins/honcho/recall_sync.py": {
+      "sha256": "8b0ed81b4218b31d4df08cb78634167c1e384244733e46e4e65c2c81d1213803"
+    },
+    "plugins/honcho/session.py": {
+      "sha256": "10db921381418fba78d6447d18d84d070283f1999c6b95d8ce59979f798e3bf6"
+    },
+    "plugins/honcho/session_auth.py": {
+      "sha256": "b75857a39e7e8bca0009d9d6166a61dccfda2eaac17d68132d4c8067771f6e52"
+    },
+    "plugins/honcho/session_context.py": {
+      "sha256": "0beb8664a058eda95ed48eef67f586577854ca3d9f8f65e1e41e68fa7f537ef7"
+    },
+    "plugins/honcho/session_migration.py": {
+      "sha256": "4c9e651614af6fff457ffb4aff8c1cacf853bd26afeea1dd19d176dd88068598"
+    },
+    "plugins/honcho/session_peers.py": {
+      "sha256": "37b3d895ee1d3ba96e64e772ea5b453384c4fc597d0d905e3fe3c31c31a3a481"
+    },
+    "plugins/honcho/tool_schemas.py": {
+      "sha256": "904059718e3dcb6963ef54abb0a8f83ef667f4395b3b438e3892b945ccfe6d03"
+    },
+    "skills/autonomous-ai-agents/heretic/SKILL.md": {
+      "sha256": "dcc080fbcbf80da8c819e0336686bece86d4156342c86d2fc577418d3aeea2a7"
+    },
+    "skills/autonomous-ai-agents/heretic/scripts/request.py": {
+      "sha256": "9db4a0e52e67e31d77477e64f8f06095c19c594abfd32fa68e6bae0113af00db"
+    },
+    "skills/autonomous-ai-agents/heretic/scripts/test_request.py": {
+      "sha256": "365a6206b387ae0f46b39d5a732a0b78a00f3c203701f56c9b09eae1a35d9736"
+    },
+    "skills/autonomous-ai-agents/hermes-agent/SKILL.md": {
+      "sha256": "2a17519d85cb25dc134987d38df3c0a6a162b9876f393e7c1c03fed364cfe382"
+    },
+    "skills/autonomous-ai-agents/hermes-agent/references/a2a-peering.md": {
+      "sha256": "ebfb6bfbec630b0424d35396d2e1672039fca01d643a41fafebba1bfb690661b"
+    },
+    "skills/autonomous-ai-agents/hermes-agent/references/a2a-peers.md": {
+      "sha256": "6dbb946063ab73c20503033f59b7794ae02bdc255f3039aab7354926a1bef165"
+    },
+    "skills/autonomous-ai-agents/hermes-agent/references/activity-status.md": {
+      "sha256": "903f091c11e54c08043e4475dcd8089dbacb8bd25fbf42a83a3d29b1e24b62ea"
+    },
+    "skills/autonomous-ai-agents/hermes-agent/references/background-systems.md": {
+      "sha256": "5c9a53f9adc8ab0e8545ab8e35f3f0fdfff580677951198d3a2c6285ac451e23"
+    },
+    "skills/autonomous-ai-agents/hermes-agent/references/cli-reference.md": {
+      "sha256": "ddd9e497cb618670e98cc4c9dee69a43a5c49f2603f1c5298d19e9ce550c728e"
+    },
+    "skills/autonomous-ai-agents/hermes-agent/references/clipboard-selection.md": {
+      "sha256": "d0e8406d7c550bdcc93eff38fcfa8176597d2d959d246eccd06cbde99d2e18f7"
+    },
+    "skills/autonomous-ai-agents/hermes-agent/references/configuration.md": {
+      "sha256": "bb8eac81e4d93248cec9380d9b1e4461225971e466bb45d1026ceba9c8e3d28e"
+    },
+    "skills/autonomous-ai-agents/hermes-agent/references/contributor-guide.md": {
+      "sha256": "a256cfa697a73a71d73dd70e3a2342479e1efdb454c41ccdbb01c80c2bacd63b"
+    },
+    "skills/autonomous-ai-agents/hermes-agent/references/delegate-task-concurrency-diagnosis.md": {
+      "sha256": "41019dd37c0c048b002d3639fe01455513b5c9aba142a21ff9c3bd4c7718a77b"
+    },
+    "skills/autonomous-ai-agents/hermes-agent/references/desktop-plugins.md": {
+      "sha256": "2bd78982684a2612f27756b3e2f7eb744d17f72e523e5586d2b388f6d7db1037"
+    },
+    "skills/autonomous-ai-agents/hermes-agent/references/direct-local-cli.md": {
+      "sha256": "a1b0704f10f96b74efa50aef4003fe880f57e0f678cb0dc975222d0d24598858"
+    },
+    "skills/autonomous-ai-agents/hermes-agent/references/honcho-openai-plan-usage.md": {
+      "sha256": "77c032eaafa3ff262537efb147b9c2403051e86c43aa75216acfd48e45c719af"
+    },
+    "skills/autonomous-ai-agents/hermes-agent/references/honcho-self-hosting.md": {
+      "sha256": "1122a7be8c8bc28db4cbfdde1fb84ef85892a17b2e1e99adf9074538a6ad654d"
+    },
+    "skills/autonomous-ai-agents/hermes-agent/references/migrate-from-claude-code.md": {
+      "sha256": "6adf399812b32e82c7a0d199c6cedbfc62a664eb9cc21b00042ea23632298dea"
+    },
+    "skills/autonomous-ai-agents/hermes-agent/references/native-mcp.md": {
+      "sha256": "7b7c27ae255b3c9d360611d60019f6cf61e71c7d70f23a1c781f1686eecc2ab4"
+    },
+    "skills/autonomous-ai-agents/hermes-agent/references/petdex.md": {
+      "sha256": "2254eabf40c360efb54e4df482f3b84820b54a15e6954c4a7e9e7fee4eb90f77"
+    },
+    "skills/autonomous-ai-agents/hermes-agent/references/portal-auth-for-third-party-apps.md": {
+      "sha256": "4890617a80d8c70fc388a49201d5a718049a64c0ddd5fac3f35754641f063b99"
+    },
+    "skills/autonomous-ai-agents/hermes-agent/references/project-context-files.md": {
+      "sha256": "ebeb7ebf57027d8fac1efe448435562ad0c29f09ab2314b31048c82346743968"
+    },
+    "skills/autonomous-ai-agents/hermes-agent/references/providers-and-models.md": {
+      "sha256": "b91ec75845987247411e6793eebf8f9923fd964ccc8ed7e6c3bebb5252ee2780"
+    },
+    "skills/autonomous-ai-agents/hermes-agent/references/security-privacy.md": {
+      "sha256": "b1f8256de858845644e62375cdfe2f31c6009e06ccfacecde19520099619f5b6"
+    },
+    "skills/autonomous-ai-agents/hermes-agent/references/service-notifications.md": {
+      "sha256": "55af6a002bd090d47d3467bb92c0006e17565bb266dfa9259b22d52890967c2b"
+    },
+    "skills/autonomous-ai-agents/hermes-agent/references/slash-commands.md": {
+      "sha256": "beb426e350e251048d3054a15544ed905e4f0464a44121afd27719ef1d39212f"
+    },
+    "skills/autonomous-ai-agents/hermes-agent/references/themes.md": {
+      "sha256": "6187ba1793e1a0e0e86c62afcb8637f96a334d2554d52dac20ec0d06d1f8282f"
+    },
+    "skills/autonomous-ai-agents/hermes-agent/references/troubleshooting.md": {
+      "sha256": "5a8bc728c1fc2519960c3bd3e2a5e1f2e2da6afc04bb7c9457a1ea5d38065179"
+    },
+    "skills/autonomous-ai-agents/hermes-agent/references/tui-widgets.md": {
+      "sha256": "20e21aabb757a9d3c7d895db8f05a3782fe8b28feef3768ac5550c8860b4a3db"
+    },
+    "skills/autonomous-ai-agents/hermes-agent/references/webhooks.md": {
+      "sha256": "f668c57d1900e249cb4b54e5d624e9aacb399ecf1452f9b258a1bf857ffa8a42"
+    },
+    "skills/autonomous-ai-agents/hermes-agent/references/windows-quirks.md": {
+      "sha256": "1011d4441ab79c1416d53123493159938ab25d546baf87f56639eb47d1ef2d35"
+    },
+    "skills/autonomous-ai-agents/hermes-agent/scripts/tailscale-safe-up.sh": {
+      "sha256": "c3c3c17b180ab3ba54b527b7e5eba58ab7a53fcfc19a755b4ed33c674418b5e1"
+    },
+    "skills/autonomous-ai-agents/hermes-agent/templates/clock.mjs": {
+      "sha256": "44ec25d560e16c7815a633039a783ddbba2d8e8cf1659560c0cd1cddec83f89d"
+    },
+    "skills/autonomous-ai-agents/hermes-agent/templates/plugin.js": {
+      "sha256": "a63c8f879756854b45373f5d6b1ae0a7fefcdd4a5af840be8a60d83b64724744"
+    },
+    "skills/autonomous-ai-agents/hermes-agent/templates/skin.yaml": {
+      "sha256": "bc8fddd7e5373b074c1c7dd423bb59d6e04769977e8a18354e3a6b3983209994"
+    },
+    "skills/autonomous-ai-agents/local-spark/SKILL.md": {
+      "sha256": "f686bad9396fcbfb427cf7f6a3ad9ade2c4fc209e46ffada009b1048bf57da45"
+    },
+    "skills/autonomous-ai-agents/local-spark/scripts/spark_call.py": {
+      "sha256": "db6be553eccac82b9494ac620d78008cbdb6a111103920d1e0b4cc12ebcf017e"
+    },
+    "skills/autonomous-ai-agents/local-spark/scripts/test_spark_call.py": {
+      "sha256": "01a12a29f48b21635292fcb506ff90481daa770e02d27c21b3ac313ba8ec00e4"
+    },
+    "skills/creative/local-image-studio/SKILL.md": {
+      "sha256": "ea19aae883b9512c51a98c2c90616a5a823a2aa66f8fbf357181e05cd6cea279"
+    },
+    "skills/creative/local-image-studio/references/image-acceptance.md": {
+      "sha256": "743b24a33be9d66236fc22fe77ab8b7151aabd34971e98e424a99216d2791ab8"
+    },
+    "skills/creative/local-image-studio/references/lightning-mode.md": {
+      "sha256": "20804d0d03cad919b6c1c71a10ef3ae903a0f5aac67c9e03ff2e50cba40a5c27"
+    },
+    "skills/creative/local-image-studio/references/verified-conditioning.md": {
+      "sha256": "77024ded591f46bc9ec9a4f794ff383370fb7f5471285394af12f20a8e52225e"
+    },
+    "skins/dsfox-skin.yaml": {
+      "sha256": "05e7d8e506189f2cd8b9b96d56fa4e2d7e0c4d46eddac3cafe16052a350b26da"
+    },
+    "upstream.json": {
+      "sha256": "926ef20c43452eefeacb83aa242f74c9387357cf566f5e14a33ca064cd1ed02d"
+    }
+  },
+  "format": 2
+}

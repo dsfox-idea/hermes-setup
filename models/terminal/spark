@@ -1,0 +1,11 @@
+#!/bin/sh
+set -eu
+export AICHAT_CONFIG_DIR="$HOME/.config/local-model-chat/spark"
+export AICHAT_CONFIG_FILE="$AICHAT_CONFIG_DIR/config.yaml"
+export AICHAT_MODEL='local:spark-x2.6-4b'
+export NO_PROXY="127.0.0.1,localhost,::1${NO_PROXY:+,$NO_PROXY}"
+if [ ! -r "$AICHAT_CONFIG_FILE" ]; then
+    printf '%s\n' "Missing local model configuration: $AICHAT_CONFIG_FILE" >&2
+    exit 1
+fi
+exec python3 "$HOME/.local/share/local-model-chat/shared_rules.py" "$@"

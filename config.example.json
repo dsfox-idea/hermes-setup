@@ -1,0 +1,59 @@
+{
+  "agent": {
+    "reasoning_effort": "high"
+  },
+  "approvals": {
+    "mode": "off"
+  },
+  "auth": {
+    "adopt_external_logins": false,
+    "codex_login_flow": "browser"
+  },
+  "compression": {
+    "model_thresholds": {
+      "openai-codex:gpt-6.1-sol-900k": 0.9
+    }
+  },
+  "display": {
+    "interface": "tui",
+    "skin": "dsfox-skin",
+    "tui_compact": true,
+    "tui_status_indicator": "activity"
+  },
+  "memory": {
+    "provider": "honcho"
+  },
+  "model": {
+    "context_length": 900000,
+    "default": "gpt-6.1-sol-900k",
+    "provider": "openai-codex"
+  },
+  "model_overrides": {
+    "custom": {
+      "qwen36-35b-heretic": {
+        "context_window": 65536
+      },
+      "spark-x2.6-4b": {
+        "context_window": 65536
+      }
+    },
+    "openai-codex": {
+      "gpt-6.1-sol-900k": {
+        "context_window": 900000
+      }
+    }
+  },
+  "plugins": {
+    "disabled": [],
+    "enabled": [
+      "honcho"
+    ]
+  },
+  "telemetry": {
+    "shared_metrics": {
+      "enabled": false,
+      "send": false
+    }
+  },
+  "timezone": "UTC"
+}

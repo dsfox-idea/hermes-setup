@@ -1,0 +1,19 @@
+{
+  "version": "0.24.0",
+  "patch_sha256": "aa5a47b773c4f729f0a59d3e175395a5f51870852bd52825f2d82974b573a447",
+  "files": {
+    "mflux/models/qwen/model/qwen_text_encoder/qwen_attention.py": {
+      "before": "e657e08401f9d2b7d625aa15cd0ec1e32643c1a07ca23b64895d42023e282fdf",
+      "after": "a2c7d831c9b7f05b0cb71f6b5fa71bd6e7f9efefec8bfbb605c5d42b217e5e1b"
+    },
+    "mflux/models/qwen/model/qwen_text_encoder/qwen_encoder.py": {
+      "before": "606176045d019fc6e56e7a3e0ffb739d08bf444b370cf009b80058e596b518ba",
+      "after": "3fec4bdbd530edc3ab6b537e964362f59792699a59232125defd93cbe00a7099"
+    },
+    "mflux/models/qwen/qwen_initializer.py": {
+      "before": "5a7d27a24e2b7b242224dc5f41016a933c320d53888385948c6ac2c74e93594a",
+      "after": "9de5dd9f7f83402b11afaa9eb403447768f1bc6b1c0f87685d9780eeb534e9ec"
+    }
+  },
+  "helper_sha256": "1c57e2f130121f4e9a2d624d1bacfd7cf4d92941f02414090a3c40f4ebc1fe34"
+}

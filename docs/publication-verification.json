@@ -1,0 +1,19 @@
+{
+  "status": "verified",
+  "upstream_commit": "bf0203a794a07aac3ff764972ab9087baa4e4f4e",
+  "scope": "Portable setup only; confidential workplace integrations, data and their Git history excluded",
+  "checks": {
+    "clean_ui_tests": {
+      "passed": 1910,
+      "skipped": 30
+    },
+    "publication_script_tests": 11,
+    "standalone_rule_tests": 8,
+    "image_runtime_unit_tests": 14,
+    "typecheck": "passed",
+    "clean_ui_build": "passed",
+    "eligible_snapshot_check": "passed",
+    "private_objects_absent": true
+  },
+  "restoration_limit": "Clean source build and isolated eligible-input snapshot verified; not a fresh-machine runtime installation"
+}

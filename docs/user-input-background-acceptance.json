@@ -1,0 +1,22 @@
+{
+  "status": "approved_and_verified",
+  "colors": {
+    "user_message_bg": "#000000",
+    "input_bg": "#000000"
+  },
+  "unchanged_canvas": "#1c1c1c",
+  "public_source_tests": {
+    "passed": 1920,
+    "skipped": 30
+  },
+  "typecheck": "passed",
+  "build": "passed",
+  "public_bundle_sha256": "fa42d303c08a0fd8a4e5ea27e0d46635ec02eefe0cbca5f7abebfc1d8cd9fc6a",
+  "live_verification": {
+    "session_preserved": true,
+    "composer_black_cells_observed": true,
+    "draft_checked_before_reload": true,
+    "diagnostic_widgets_removed": true
+  },
+  "note": "An existing daemon timing test failed under parallel load; isolated test and full suite with two workers passed. No timeout was changed."
+}

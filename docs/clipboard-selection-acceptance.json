@@ -1,0 +1,44 @@
+{
+  "verified_at": "2026-11-06T13:08:54.319007+00:00",
+  "scope": "Local macOS Hermes TUI application-managed mouse selections",
+  "confirmation_ms": 2000,
+  "confirmation_color": "statusGood",
+  "skin_label_key": "branding.copy_notice",
+  "native_checks": [
+    {
+      "area": "transcript",
+      "copied": true,
+      "on_release_only": true,
+      "green": true,
+      "expires": true
+    },
+    {
+      "area": "composer",
+      "copied": true,
+      "on_release_only": true,
+      "green": true,
+      "expires": true
+    }
+  ],
+  "original_pasteboard_formats_and_bytes_restored": true,
+  "existing_draft_and_session_preserved": true,
+  "clean_source_verification": {
+    "typecheck": "passed",
+    "build": "passed",
+    "test_files_passed": 249,
+    "test_files_skipped": 1,
+    "tests_passed": 1931,
+    "tests_skipped": 30
+  },
+  "limits": [
+    "Terminal-owned selection that bypasses TUI mouse reporting is outside this route.",
+    "SSH retains its existing OSC copy path without claiming native clipboard confirmation."
+  ],
+  "layout_restoration": {
+    "owned_ambient_state_removed": true,
+    "both_rail_widths_zero": true,
+    "full_repaint": true,
+    "physical_warp_hermes_setup_tab_verified": true,
+    "no_fixture_loader_files_remain": true
+  }
+}

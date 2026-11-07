@@ -1,0 +1,220 @@
+{
+  "date": "2026-11-03",
+  "models": {
+    "local": "qwen36-35b-heretic",
+    "cloud": "gpt-6.1-sol"
+  },
+  "method": "Identical explicit Russian system and user input; no history, tools or memory; local thinking on versus cloud high; warmup excluded",
+  "system_prompt_scope": "Shared short synthetic system text (181 characters), not the full working Hermes system prompt",
+  "full_system_follow_up": "models/full-system-comparison.json",
+  "synthetic_input": {
+    "system": "\u0420\u0435\u0448\u0438 \u0442\u0435\u0441\u0442\u043e\u0432\u0443\u044e \u0437\u0430\u0434\u0430\u0447\u0443 \u0441\u0430\u043c\u043e\u0441\u0442\u043e\u044f\u0442\u0435\u043b\u044c\u043d\u043e, \u0431\u0435\u0437 \u0438\u043d\u0441\u0442\u0440\u0443\u043c\u0435\u043d\u0442\u043e\u0432 \u0438 \u0441\u0435\u0442\u0438. \u0424\u0438\u043d\u0430\u043b\u044c\u043d\u044b\u0439 \u043e\u0442\u0432\u0435\u0442 \u0434\u043e\u043b\u0436\u0435\u043d \u0431\u044b\u0442\u044c \u043f\u043e-\u0440\u0443\u0441\u0441\u043a\u0438 \u0438 \u0441\u0442\u0440\u043e\u0433\u043e \u0432 \u0443\u043a\u0430\u0437\u0430\u043d\u043d\u043e\u043c \u0444\u043e\u0440\u043c\u0430\u0442\u0435. \u0421\u043b\u0443\u0436\u0435\u0431\u043d\u044b\u0435 \u0440\u0430\u0441\u0441\u0443\u0436\u0434\u0435\u043d\u0438\u044f \u043d\u0435 \u0432\u043a\u043b\u044e\u0447\u0430\u0439 \u0432 \u0444\u0438\u043d\u0430\u043b\u044c\u043d\u044b\u0439 \u043e\u0442\u0432\u0435\u0442.",
+    "prompt": "\u041d\u0430\u043f\u0438\u0448\u0438 \u043d\u0430 Python \u0444\u0443\u043d\u043a\u0446\u0438\u044e stable_unique(items). \u041e\u043d\u0430 \u0432\u043e\u0437\u0432\u0440\u0430\u0449\u0430\u0435\u0442 \u043d\u043e\u0432\u044b\u0439 \u0441\u043f\u0438\u0441\u043e\u043a, \u0441\u043e\u0445\u0440\u0430\u043d\u044f\u0435\u0442 \u043f\u043e\u0440\u044f\u0434\u043e\u043a \u043f\u0435\u0440\u0432\u044b\u0445 \u0432\u0445\u043e\u0436\u0434\u0435\u043d\u0438\u0439 \u0438 \u0441\u0440\u0430\u0432\u043d\u0438\u0432\u0430\u0435\u0442 \u0437\u043d\u0430\u0447\u0435\u043d\u0438\u044f \u043f\u043e \u0440\u0430\u0432\u0435\u043d\u0441\u0442\u0432\u0443. \u0412\u043e \u0432\u0445\u043e\u0434\u0435 \u043c\u043e\u0433\u0443\u0442 \u0431\u044b\u0442\u044c \u0447\u0438\u0441\u043b\u0430, \u0441\u0442\u0440\u043e\u043a\u0438, \u0441\u043f\u0438\u0441\u043a\u0438 \u0438 \u0441\u043b\u043e\u0432\u0430\u0440\u0438, \u0432\u043a\u043b\u044e\u0447\u0430\u044f \u043d\u0435\u0445\u0435\u0448\u0438\u0440\u0443\u0435\u043c\u044b\u0435 \u0437\u043d\u0430\u0447\u0435\u043d\u0438\u044f. \u0412\u0445\u043e\u0434\u043d\u044b\u0435 \u0434\u0430\u043d\u043d\u044b\u0435 \u0438\u0437\u043c\u0435\u043d\u044f\u0442\u044c \u043d\u0435\u043b\u044c\u0437\u044f. \u041e\u0431\u0434\u0443\u043c\u0430\u0439 \u0433\u0440\u0430\u043d\u0438\u0447\u043d\u044b\u0435 \u0441\u043b\u0443\u0447\u0430\u0438. \u0412\u0435\u0440\u043d\u0438 \u0442\u043e\u043b\u044c\u043a\u043e JSON \u0441 \u0434\u0432\u0443\u043c\u044f \u0441\u0442\u0440\u043e\u043a\u043e\u0432\u044b\u043c\u0438 \u043f\u043e\u043b\u044f\u043c\u0438: code \u0438 explanation. \u0412 code \u043f\u043e\u043c\u0435\u0441\u0442\u0438 \u0442\u043e\u043b\u044c\u043a\u043e \u043e\u043f\u0440\u0435\u0434\u0435\u043b\u0435\u043d\u0438\u0435 \u0444\u0443\u043d\u043a\u0446\u0438\u0438 \u0431\u0435\u0437 \u0438\u043c\u043f\u043e\u0440\u0442\u043e\u0432, \u043f\u0440\u0438\u043c\u0435\u0440\u043e\u0432 \u0438\u0441\u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u043d\u0438\u044f \u0438 \u043a\u043e\u043c\u043c\u0435\u043d\u0442\u0430\u0440\u0438\u0435\u0432. \u0412 explanation \u043f\u043e-\u0440\u0443\u0441\u0441\u043a\u0438 \u043e\u0431\u044a\u044f\u0441\u043d\u0438 \u0430\u043b\u0433\u043e\u0440\u0438\u0442\u043c \u0438 \u0435\u0433\u043e \u043e\u0433\u0440\u0430\u043d\u0438\u0447\u0435\u043d\u0438\u044f, \u043d\u0435 \u0431\u043e\u043b\u0435\u0435 90 \u0441\u043b\u043e\u0432. \u041d\u0435 \u0434\u043e\u0431\u0430\u0432\u043b\u044f\u0439 \u0431\u043b\u043e\u043a\u0438 Markdown."
+  },
+  "samples": [
+    {
+      "route": "local",
+      "system_sha256": "44cef21f8d28cfcd87c81f8c6c15350782d098b095a895b818341451f4b12122",
+      "prompt_sha256": "ddfeaa52d950241e9c08d398255b36ec1be2a01940686330625e40e58643e2ca",
+      "total_seconds": 48.50559487500868,
+      "first_final_text_seconds": 45.946522541999,
+      "visible_characters": 717,
+      "reasoning_confirmed": true,
+      "visible_tokens": 185,
+      "reasoning_tokens": 3275,
+      "reasoning_characters": 13084,
+      "total_tokens": 3462,
+      "input_tokens": 201,
+      "status": "stop",
+      "reasoning_evidence": "Streamed separate reasoning; tokens counted with the model tokenizer",
+      "wire_settings": {
+        "enable_thinking": true,
+        "max_tokens": 4096
+      },
+      "sample": 1,
+      "answer_check": {
+        "json_valid": true,
+        "code_passed": true,
+        "explanation_in_russian": true,
+        "explanation_words": 66,
+        "word_limit_met": true,
+        "cases": 7
+      }
+    },
+    {
+      "route": "cloud",
+      "system_sha256": "44cef21f8d28cfcd87c81f8c6c15350782d098b095a895b818341451f4b12122",
+      "prompt_sha256": "ddfeaa52d950241e9c08d398255b36ec1be2a01940686330625e40e58643e2ca",
+      "total_seconds": 19.59746245900169,
+      "first_final_text_seconds": 18.993518875009613,
+      "visible_characters": 749,
+      "reasoning_confirmed": true,
+      "visible_tokens": 197,
+      "reasoning_tokens": 450,
+      "reasoning_characters": 65,
+      "total_tokens": 647,
+      "input_tokens": 199,
+      "status": "completed",
+      "reasoning_evidence": "Provider-reported reasoning token count",
+      "wire_settings": {
+        "effort": "high",
+        "max_output_tokens": null,
+        "output_cap_note": "The subscription endpoint does not accept the local model's token-cap parameter; final-answer constraints are identical"
+      },
+      "sample": 1,
+      "answer_check": {
+        "json_valid": true,
+        "code_passed": true,
+        "explanation_in_russian": true,
+        "explanation_words": 70,
+        "word_limit_met": true,
+        "cases": 7
+      }
+    },
+    {
+      "route": "cloud",
+      "system_sha256": "44cef21f8d28cfcd87c81f8c6c15350782d098b095a895b818341451f4b12122",
+      "prompt_sha256": "c847b145dcf60de285b5ec28279f666bc592d6dc4af393fe4557923c59fb345e",
+      "total_seconds": 25.050452958006645,
+      "first_final_text_seconds": 24.391424957997515,
+      "visible_characters": 762,
+      "reasoning_confirmed": true,
+      "visible_tokens": 199,
+      "reasoning_tokens": 475,
+      "reasoning_characters": 27,
+      "total_tokens": 674,
+      "input_tokens": 199,
+      "status": "completed",
+      "reasoning_evidence": "Provider-reported reasoning token count",
+      "wire_settings": {
+        "effort": "high",
+        "max_output_tokens": null,
+        "output_cap_note": "The subscription endpoint does not accept the local model's token-cap parameter; final-answer constraints are identical"
+      },
+      "sample": 2,
+      "answer_check": {
+        "json_valid": true,
+        "code_passed": true,
+        "explanation_in_russian": true,
+        "explanation_words": 73,
+        "word_limit_met": true,
+        "cases": 7
+      }
+    },
+    {
+      "route": "local",
+      "system_sha256": "44cef21f8d28cfcd87c81f8c6c15350782d098b095a895b818341451f4b12122",
+      "prompt_sha256": "c847b145dcf60de285b5ec28279f666bc592d6dc4af393fe4557923c59fb345e",
+      "total_seconds": 49.39762704100576,
+      "first_final_text_seconds": 47.06032312499883,
+      "visible_characters": 758,
+      "reasoning_confirmed": true,
+      "visible_tokens": 169,
+      "reasoning_tokens": 3388,
+      "reasoning_characters": 13205,
+      "total_tokens": 3561,
+      "input_tokens": 201,
+      "status": "stop",
+      "reasoning_evidence": "Streamed separate reasoning; tokens counted with the model tokenizer",
+      "wire_settings": {
+        "enable_thinking": true,
+        "max_tokens": 4096
+      },
+      "sample": 2,
+      "answer_check": {
+        "json_valid": true,
+        "code_passed": true,
+        "explanation_in_russian": true,
+        "explanation_words": 68,
+        "word_limit_met": true,
+        "cases": 7
+      }
+    },
+    {
+      "route": "local",
+      "system_sha256": "44cef21f8d28cfcd87c81f8c6c15350782d098b095a895b818341451f4b12122",
+      "prompt_sha256": "af7e6c92d2444dd47dc294d667b96d1e2c14689b0850c0d1f216b54ac05ad1d8",
+      "total_seconds": 54.247931875012,
+      "first_final_text_seconds": 52.01364708300389,
+      "visible_characters": 654,
+      "reasoning_confirmed": true,
+      "visible_tokens": 153,
+      "reasoning_tokens": 3578,
+      "reasoning_characters": 13942,
+      "total_tokens": 3733,
+      "input_tokens": 201,
+      "status": "stop",
+      "reasoning_evidence": "Streamed separate reasoning; tokens counted with the model tokenizer",
+      "wire_settings": {
+        "enable_thinking": true,
+        "max_tokens": 4096
+      },
+      "sample": 3,
+      "answer_check": {
+        "json_valid": true,
+        "code_passed": true,
+        "explanation_in_russian": true,
+        "explanation_words": 59,
+        "word_limit_met": true,
+        "cases": 7
+      }
+    },
+    {
+      "route": "cloud",
+      "system_sha256": "44cef21f8d28cfcd87c81f8c6c15350782d098b095a895b818341451f4b12122",
+      "prompt_sha256": "af7e6c92d2444dd47dc294d667b96d1e2c14689b0850c0d1f216b54ac05ad1d8",
+      "total_seconds": 28.767680999997538,
+      "first_final_text_seconds": 26.551944958002423,
+      "visible_characters": 702,
+      "reasoning_confirmed": true,
+      "visible_tokens": 184,
+      "reasoning_tokens": 516,
+      "reasoning_characters": 113,
+      "total_tokens": 700,
+      "input_tokens": 199,
+      "status": "completed",
+      "reasoning_evidence": "Provider-reported reasoning token count",
+      "wire_settings": {
+        "effort": "high",
+        "max_output_tokens": null,
+        "output_cap_note": "The subscription endpoint does not accept the local model's token-cap parameter; final-answer constraints are identical"
+      },
+      "sample": 3,
+      "answer_check": {
+        "json_valid": true,
+        "code_passed": true,
+        "explanation_in_russian": true,
+        "explanation_words": 68,
+        "word_limit_met": true,
+        "cases": 7
+      }
+    }
+  ],
+  "summary": {
+    "local": {
+      "samples": 3,
+      "reasoning_confirmed_every_time": true,
+      "correct_answers": 3,
+      "total_seconds": 49.39762704100576,
+      "first_final_text_seconds": 47.06032312499883,
+      "visible_tokens": 169,
+      "reasoning_tokens": 3388
+    },
+    "cloud": {
+      "samples": 3,
+      "reasoning_confirmed_every_time": true,
+      "correct_answers": 3,
+      "total_seconds": 25.050452958006645,
+      "first_final_text_seconds": 24.391424957997515,
+      "visible_tokens": 197,
+      "reasoning_tokens": 475
+    }
+  },
+  "limitations": [
+    "Three repetitions of one coding task, not a general model ranking.",
+    "Local thinking enabled and cloud high effort are both verified, but are not identical internal compute budgets.",
+    "The local token cap was 4096; the Codex subscription endpoint does not accept the same cap. All responses ended naturally without truncation.",
+    "Local reasoning tokens are counted with its tokenizer; cloud reasoning tokens are provider-reported and not directly interchangeable.",
+    "Only final-answer latency and answer checks support the operational comparison; short streaming bursts are not treated as pure cloud generation throughput."
+  ]
+}

@@ -1,0 +1,287 @@
+{
+  "local": {
+    "q6": {
+      "img_in.bias": {
+        "dtype": "BF16",
+        "shape": [
+          3072
+        ],
+        "sha256": "5c5184b1ed9af300b12bec8236d85aeed55b26deb1e873ccf44cc3071ef0052a",
+        "distinct_bytes": 256
+      },
+      "transformer_blocks.0.attn.to_q.bias": {
+        "dtype": "BF16",
+        "shape": [
+          3072
+        ],
+        "sha256": "2c084dda724a2aacce4ad5326bcc7f533e8d2f865818242d3cd2bc083c23c0af",
+        "distinct_bytes": 256
+      },
+      "transformer_blocks.15.attn.to_q.bias": {
+        "dtype": "BF16",
+        "shape": [
+          3072
+        ],
+        "sha256": "d8047d41dcd8922024f40fe58a01e92daef730e52f36704318a391268b17b701",
+        "distinct_bytes": 256
+      },
+      "transformer_blocks.30.attn.to_q.bias": {
+        "dtype": "BF16",
+        "shape": [
+          3072
+        ],
+        "sha256": "112197ebe34368d921c9fcc9681c0a552c9e8b7040c9fc7529d408a204e3086b",
+        "distinct_bytes": 256
+      },
+      "transformer_blocks.45.attn.to_q.bias": {
+        "dtype": "BF16",
+        "shape": [
+          3072
+        ],
+        "sha256": "4410ee89ff6953ba194ab9a2ddaa894079486ab56be2288f01714aee15193d51",
+        "distinct_bytes": 256
+      },
+      "norm_out.linear.bias": {
+        "dtype": "BF16",
+        "shape": [
+          6144
+        ],
+        "sha256": "c04b5d2762b398992af6c76f0726188d0dfdbef37a4ff761698a237efba0b633",
+        "distinct_bytes": 256
+      },
+      "proj_out.bias": {
+        "dtype": "BF16",
+        "shape": [
+          64
+        ],
+        "sha256": "a9a73f305f64de5f4c4622d8907ed68a409df29a5ffbab33abcaaca4b1539516",
+        "distinct_bytes": 60
+      },
+      "transformer_blocks.59.attn.to_q.bias": {
+        "dtype": "BF16",
+        "shape": [
+          3072
+        ],
+        "sha256": "c8b8cedb9b491a5a606366a0d43b1654dcdd9660e7f8bdffae8ed63a49867156",
+        "distinct_bytes": 256
+      }
+    },
+    "q8": {
+      "img_in.bias": {
+        "dtype": "BF16",
+        "shape": [
+          3072
+        ],
+        "sha256": "5c5184b1ed9af300b12bec8236d85aeed55b26deb1e873ccf44cc3071ef0052a",
+        "distinct_bytes": 256
+      },
+      "transformer_blocks.0.attn.to_q.bias": {
+        "dtype": "BF16",
+        "shape": [
+          3072
+        ],
+        "sha256": "2c084dda724a2aacce4ad5326bcc7f533e8d2f865818242d3cd2bc083c23c0af",
+        "distinct_bytes": 256
+      },
+      "norm_out.linear.bias": {
+        "dtype": "BF16",
+        "shape": [
+          6144
+        ],
+        "sha256": "c04b5d2762b398992af6c76f0726188d0dfdbef37a4ff761698a237efba0b633",
+        "distinct_bytes": 256
+      },
+      "proj_out.bias": {
+        "dtype": "BF16",
+        "shape": [
+          64
+        ],
+        "sha256": "a9a73f305f64de5f4c4622d8907ed68a409df29a5ffbab33abcaaca4b1539516",
+        "distinct_bytes": 60
+      },
+      "transformer_blocks.59.attn.to_q.bias": {
+        "dtype": "BF16",
+        "shape": [
+          3072
+        ],
+        "sha256": "c8b8cedb9b491a5a606366a0d43b1654dcdd9660e7f8bdffae8ed63a49867156",
+        "distinct_bytes": 256
+      },
+      "transformer_blocks.15.attn.to_q.bias": {
+        "dtype": "BF16",
+        "shape": [
+          3072
+        ],
+        "sha256": "d8047d41dcd8922024f40fe58a01e92daef730e52f36704318a391268b17b701",
+        "distinct_bytes": 256
+      },
+      "transformer_blocks.30.attn.to_q.bias": {
+        "dtype": "BF16",
+        "shape": [
+          3072
+        ],
+        "sha256": "112197ebe34368d921c9fcc9681c0a552c9e8b7040c9fc7529d408a204e3086b",
+        "distinct_bytes": 256
+      },
+      "transformer_blocks.45.attn.to_q.bias": {
+        "dtype": "BF16",
+        "shape": [
+          3072
+        ],
+        "sha256": "4410ee89ff6953ba194ab9a2ddaa894079486ab56be2288f01714aee15193d51",
+        "distinct_bytes": 256
+      }
+    }
+  },
+  "official": {
+    "Qwen/Qwen-Image-Edit-2511": {
+      "revision": "6f3ccc0b56e431dc6a0c2b2039706d7d26f22cb9",
+      "tensors": {
+        "img_in.bias": {
+          "dtype": "BF16",
+          "shape": [
+            3072
+          ],
+          "sha256": "40b76ec24066941184dbc317486d057e9f1f999af3c2ceb57748a1a9b40a1361",
+          "distinct_bytes": 256
+        },
+        "norm_out.linear.bias": {
+          "dtype": "BF16",
+          "shape": [
+            6144
+          ],
+          "sha256": "65c5bdc764c05a97948e3936866a927c845ff3d54b7a449ab1936de597b4c9ad",
+          "distinct_bytes": 256
+        },
+        "proj_out.bias": {
+          "dtype": "BF16",
+          "shape": [
+            64
+          ],
+          "sha256": "95c83824360fd9aed8f52e713251538d2ba1eadcfbed28c9674a1c494b956062",
+          "distinct_bytes": 58
+        },
+        "transformer_blocks.0.attn.to_q.bias": {
+          "dtype": "BF16",
+          "shape": [
+            3072
+          ],
+          "sha256": "d97fa29505b8688c884eb0a678f5aa2e8ccd35dfafed867b26bd17ba256537fb",
+          "distinct_bytes": 256
+        },
+        "transformer_blocks.15.attn.to_q.bias": {
+          "dtype": "BF16",
+          "shape": [
+            3072
+          ],
+          "sha256": "f7c073c845f85e5809da56f9290f663cd25ca62c92b95e5a60f57a370c207da9",
+          "distinct_bytes": 256
+        },
+        "transformer_blocks.30.attn.to_q.bias": {
+          "dtype": "BF16",
+          "shape": [
+            3072
+          ],
+          "sha256": "d37358e9587c6f574ba6bee76f3915388261e7047bc16e2633f6f4a5e36ec449",
+          "distinct_bytes": 256
+        },
+        "transformer_blocks.45.attn.to_q.bias": {
+          "dtype": "BF16",
+          "shape": [
+            3072
+          ],
+          "sha256": "79fd92b23dec3d491b5ad7186187bfc525b1500a727e88f12527d6fff6c6bc66",
+          "distinct_bytes": 256
+        },
+        "transformer_blocks.59.attn.to_q.bias": {
+          "dtype": "BF16",
+          "shape": [
+            3072
+          ],
+          "sha256": "5e5c3d946a09e74a7fcca5690acd7de14b4422e0a8b3a79524e812bc5c468001",
+          "distinct_bytes": 256
+        }
+      }
+    },
+    "Qwen/Qwen-Image-Edit-2509": {
+      "revision": "d3968ef930e841f4c73640fb8afa3b306a78167e",
+      "tensors": {
+        "img_in.bias": {
+          "dtype": "BF16",
+          "shape": [
+            3072
+          ],
+          "sha256": "5c5184b1ed9af300b12bec8236d85aeed55b26deb1e873ccf44cc3071ef0052a",
+          "distinct_bytes": 256
+        },
+        "norm_out.linear.bias": {
+          "dtype": "BF16",
+          "shape": [
+            6144
+          ],
+          "sha256": "c04b5d2762b398992af6c76f0726188d0dfdbef37a4ff761698a237efba0b633",
+          "distinct_bytes": 256
+        },
+        "proj_out.bias": {
+          "dtype": "BF16",
+          "shape": [
+            64
+          ],
+          "sha256": "a9a73f305f64de5f4c4622d8907ed68a409df29a5ffbab33abcaaca4b1539516",
+          "distinct_bytes": 60
+        },
+        "transformer_blocks.0.attn.to_q.bias": {
+          "dtype": "BF16",
+          "shape": [
+            3072
+          ],
+          "sha256": "2c084dda724a2aacce4ad5326bcc7f533e8d2f865818242d3cd2bc083c23c0af",
+          "distinct_bytes": 256
+        },
+        "transformer_blocks.15.attn.to_q.bias": {
+          "dtype": "BF16",
+          "shape": [
+            3072
+          ],
+          "sha256": "d8047d41dcd8922024f40fe58a01e92daef730e52f36704318a391268b17b701",
+          "distinct_bytes": 256
+        },
+        "transformer_blocks.30.attn.to_q.bias": {
+          "dtype": "BF16",
+          "shape": [
+            3072
+          ],
+          "sha256": "112197ebe34368d921c9fcc9681c0a552c9e8b7040c9fc7529d408a204e3086b",
+          "distinct_bytes": 256
+        },
+        "transformer_blocks.45.attn.to_q.bias": {
+          "dtype": "BF16",
+          "shape": [
+            3072
+          ],
+          "sha256": "4410ee89ff6953ba194ab9a2ddaa894079486ab56be2288f01714aee15193d51",
+          "distinct_bytes": 256
+        },
+        "transformer_blocks.59.attn.to_q.bias": {
+          "dtype": "BF16",
+          "shape": [
+            3072
+          ],
+          "sha256": "c8b8cedb9b491a5a606366a0d43b1654dcdd9660e7f8bdffae8ed63a49867156",
+          "distinct_bytes": 256
+        }
+      }
+    }
+  },
+  "matches": {
+    "q6": {
+      "Qwen/Qwen-Image-Edit-2511": false,
+      "Qwen/Qwen-Image-Edit-2509": true
+    },
+    "q8": {
+      "Qwen/Qwen-Image-Edit-2511": false,
+      "Qwen/Qwen-Image-Edit-2509": true
+    }
+  },
+  "tensor_bytes_downloaded": 550784
+}

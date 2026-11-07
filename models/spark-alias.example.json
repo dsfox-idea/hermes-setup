@@ -1,0 +1,19 @@
+{
+  "model_aliases": {
+    "spark": {
+      "model": "spark-x2.6-4b",
+      "provider": "custom",
+      "base_url": "http://127.0.0.1:18320/v1"
+    }
+  },
+  "model_overrides": {
+    "custom": {
+      "spark-x2.6-4b": {"context_window": 65536}
+    }
+  },
+  "agent": {
+    "reasoning_overrides": {
+      "spark-x2.6-4b": false
+    }
+  }
+}

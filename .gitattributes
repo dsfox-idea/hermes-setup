@@ -1,0 +1,2 @@
+*.patch -whitespace
+skills/** whitespace=-blank-at-eof

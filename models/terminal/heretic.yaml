@@ -1,0 +1,29 @@
+model: local:qwen36-35b-heretic
+stream: true
+save: false
+save_session: false
+save_shell_history: false
+function_calling: false
+compress_threshold: 0
+repl_prelude: session:temp
+wrap: auto
+left_prompt: '{color.green}heretic>{color.reset} '
+right_prompt: ''
+clients:
+  - type: openai-compatible
+    name: local
+    api_base: http://127.0.0.1:18319/v1
+    models:
+      - name: qwen36-35b-heretic
+        max_input_tokens: 49152
+        supports_function_calling: false
+    patch:
+      chat_completions:
+        '^qwen36-35b-heretic$':
+          body:
+            max_tokens: 16384
+            temperature: 0.6
+            top_p: 0.95
+            top_k: 20
+            chat_template_kwargs:
+              enable_thinking: true

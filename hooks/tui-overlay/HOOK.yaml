@@ -1,0 +1,4 @@
+name: tui-overlay
+description: Rebuild the patched TUI overlay when the Hermes checkout or the patch changed (runs after every gateway start, e.g. after hermes update).
+events:
+  - gateway:startup

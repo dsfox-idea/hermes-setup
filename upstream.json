@@ -1,0 +1,27 @@
+{
+  "hermes": {
+    "commit": "bf0203a794a07aac3ff764972ab9087baa4e4f4e",
+    "url": "https://github.com/NousResearch/hermes-agent.git",
+    "version": "v0.22.5"
+  },
+  "honcho": {
+    "commit": "e2d2aba182862deeb846e5cd4a30a41bce0ed82a",
+    "plugin_version": "1.0.0",
+    "server_version": "3.2.2",
+    "url": "https://github.com/plastic-labs/honcho.git"
+  },
+  "patch": {
+    "path": "patches/hermes-tui.patch",
+    "sha256": "0c661b4512759c4220e5e7268ad990cc0c405e2a76c960464d233fb69e9b956a"
+  },
+  "siwc_devkit": {
+    "commit": "0a36fefeb913055c8c7a1a29b63d82b96b2e841a",
+    "url": "https://github.com/openai/sign-in-with-chatgpt-devkit.git"
+  },
+  "subscription_gateway": {
+    "commit": "7cad1cb7df48c6c5ffb7ff0b34ef8198806115bc",
+    "release_archive_sha256": "fb8e2568e98e3304a1b892c4f70a4c154c661078ad87007e63cf7ba71b4ce168",
+    "url": "https://github.com/router-for-me/CLIProxyAPI",
+    "version": "v8.0.51"
+  }
+}

@@ -1,0 +1,20 @@
+[
+  {
+    "size": 512,
+    "pack_roundtrip": "passed",
+    "schedule_max_error": 1.015273229931779e-07
+  },
+  {
+    "size": 1024,
+    "pack_roundtrip": "passed",
+    "schedule_max_error": 1.0516571213869952e-07
+  },
+  {
+    "attention_sequence": 2112,
+    "relative_rmse": 0.0016445009336940142
+  },
+  {
+    "attention_sequence": 8256,
+    "relative_rmse": 0.0016586603150019028
+  }
+]

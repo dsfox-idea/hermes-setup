@@ -1,0 +1,123 @@
+{
+  "status": "passed_generation_and_lightning_edit_fixtures",
+  "weights": {
+    "models": 2,
+    "files_verified": 52,
+    "bytes_verified": 68486036019,
+    "status": "passed"
+  },
+  "trials": [
+    {
+      "output": "01-generated.png",
+      "width": 1024,
+      "height": 1024,
+      "steps": 30,
+      "wall_seconds": 876.93,
+      "review": "passed_visual_review"
+    },
+    {
+      "output": "multi-reference-smoke.png",
+      "width": 512,
+      "height": 512,
+      "steps": 4,
+      "wall_seconds": 104.61,
+      "review": "passed_smoke_review"
+    },
+    {
+      "output": "edit-1024-four-step-diagnostic.png",
+      "width": 1024,
+      "height": 1024,
+      "steps": 4,
+      "wall_seconds": 330.2,
+      "review": "failed_visual_quality"
+    },
+    {
+      "output": "edit-512-four-step-diagnostic.png",
+      "width": 512,
+      "height": 512,
+      "steps": 4,
+      "wall_seconds": 69.91,
+      "review": "passed_smoke_review"
+    }
+  ],
+  "masked_edit": {
+    "status": "failed_visual_quality",
+    "technical_checks": "passed",
+    "visual_review": "Severe background corruption inside the selection and distorted metallic surface; recoloring and outside-mask pixel checks alone are insufficient.",
+    "steps": 30,
+    "seconds": 6311.23,
+    "dimensions": [
+      1024,
+      1024
+    ],
+    "outside_feathered_selection_pixel_exact": true,
+    "original_red_pixels_changed_to_blue_fraction": 0.9778286323832205,
+    "changed_pixel_bounds": [
+      63,
+      243,
+      967,
+      897
+    ],
+    "output_sha256": "434527526f132cbfb1c1235baca3581be235d56d224c679c72e0573a1cff4807"
+  },
+  "gui_checks": {
+    "mask_undo_redo": "passed",
+    "save_readback_pixel_exact": "passed",
+    "invalid_input_rejected": "passed",
+    "compare_revert": "not_verified_due_browser_state_loss"
+  },
+  "q8_comparison": "Base-model four/eight-step trials failed; the matched Lightning four-step adapter and author schedule passed without a mask.",
+  "precise_mask_example": {
+    "output": "edit-q8-masked-result.png",
+    "source_model_output": "edit-q8-conditioning-fixed.png",
+    "outside_mask_pixel_exact": true,
+    "red_pixels_changed_to_blue_fraction": 0.9975345344269733,
+    "visual_review": "usable draft; background preserved, slight edge artifacts remain",
+    "method": "actual model output composited with a reference-color mask for this acceptance fixture; not an unmasked model result"
+  },
+  "lightning_test": {
+    "output": "edit-lightning-four-step.png",
+    "dimensions": [
+      1024,
+      1024
+    ],
+    "steps": 4,
+    "guidance": 1.0,
+    "wall_seconds": 348.54,
+    "peak_mlx_gb": 40.27,
+    "review": "passed_visual_review",
+    "mask_used": false,
+    "output_sha256": "f1e9d1d0bdffdfd8a65704343b54b280ac9b2d3e2e1e41ac6a2f01913dc73b1f",
+    "recipe": "lightning-setup.json",
+    "matched_adapter_keys": 2160,
+    "applied_adapter_layers": 720,
+    "background_crop": [
+      720,
+      80,
+      960,
+      240
+    ],
+    "background_high_frequency_rms": {
+      "original": 0.9556666016578674,
+      "patched_base_eight_steps": 6.401369094848633,
+      "lightning_four_steps": 0.8778871297836304
+    }
+  },
+  "lightning_application_test": {
+    "status": "passed",
+    "dimensions": [
+      512,
+      512
+    ],
+    "steps": 4,
+    "seconds": 77.15,
+    "outside_feathered_mask_pixel_exact": true,
+    "red_pixels_changed_to_blue_fraction": 0.9969963260847979,
+    "saved_file_readback": "pixel_exact",
+    "saved_name": "acceptance-gui-lightning-b771c2a18d11.png",
+    "visual_review": "passed"
+  },
+  "historical_results_note": "Older failed trials are retained below and are not the active preset.",
+  "runtime_restore_checks": "passed: restore, repeat application, modified-source refusal, helper conflict and path-escape refusal",
+  "gui_patch_restore": "passed against pinned upstream source"
+}

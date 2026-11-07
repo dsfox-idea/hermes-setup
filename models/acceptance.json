@@ -1,0 +1,88 @@
+{
+  "date": "2026-11-03",
+  "hardware": {
+    "chip": "Apple M4 Pro",
+    "unified_memory_GiB": 48
+  },
+  "artifact": {
+    "repository": "froggeric/Qwen3.6-35B-A3B-Uncensored-Heretic-MLX-4bit",
+    "revision": "32939a6cef2750f18ccf352443f22f2e4dfe3613",
+    "verified_files": 13,
+    "weight_bytes": 20402204301
+  },
+  "runtime": {
+    "mlx_lm": "0.32.2",
+    "mlx": "0.32.4",
+    "python": "3.14.9",
+    "metal_computation_verified": true
+  },
+  "checks": {
+    "python": {
+      "passed": true,
+      "cases": 7,
+      "input_mutation": false
+    },
+    "bash": {
+      "passed": true,
+      "filename_cases": 4,
+      "negative_cases": 2,
+      "empty_directory": true,
+      "files_unchanged": true
+    },
+    "russian_reasoning": {
+      "passed": true,
+      "separate_reasoning": true,
+      "final_answer_in_russian": true
+    }
+  },
+  "structured_tool_round_trip": {
+    "passed": true,
+    "tool": "read_test_value",
+    "seconds": 1.5806742920103716
+  },
+  "hermes_native": {
+    "passed": true,
+    "isolated_synthetic_query": true,
+    "tool": "terminal",
+    "command": "printf LOCAL_HERETIC_OK",
+    "tool_calls": 1,
+    "tool_exit_code": 0,
+    "input_tokens": 7361,
+    "output_tokens": 79,
+    "duration_ms": 18415
+  },
+  "generation_benchmark": {
+    "method": "Warm HTTP streaming; first nonempty content delta to last content delta; provider completion token count minus one; prefill excluded; no thinking",
+    "samples": [
+      {
+        "completion_tokens": 512,
+        "prompt_tokens": 37,
+        "time_to_first_content_seconds": 0.15563316699990537,
+        "stream_generation_tokens_per_second": 74.91050091370015,
+        "end_to_end_seconds": 6.977330249996157
+      },
+      {
+        "completion_tokens": 512,
+        "prompt_tokens": 37,
+        "time_to_first_content_seconds": 0.12141745899862144,
+        "stream_generation_tokens_per_second": 76.28132900332874,
+        "end_to_end_seconds": 6.820544333997532
+      },
+      {
+        "completion_tokens": 512,
+        "prompt_tokens": 37,
+        "time_to_first_content_seconds": 0.12145637499634176,
+        "stream_generation_tokens_per_second": 75.97257721615406,
+        "end_to_end_seconds": 6.847788083003252
+      }
+    ],
+    "median_tokens_per_second": 75.97257721615406
+  },
+  "configured_client_context_tokens": 65536,
+  "maximum_context_capacity_tested": false,
+  "limitations": [
+    "Short synthetic acceptance cases are not a comprehensive coding or Russian-language benchmark.",
+    "Generation throughput samples use short prompts and exclude prefill and thinking.",
+    "Hermes CLI config-key warnings and unsupported --run-budget are recorded in BACKLOG.md."
+  ]
+}

@@ -1,0 +1,2443 @@
+diff --git a/hermes_constants.py b/hermes_constants.py
+index f9897c96cc..4bf2a976f1 100644
+--- a/hermes_constants.py
++++ b/hermes_constants.py
+@@ -19,7 +19,7 @@ _HERMES_HOME_OVERRIDE: ContextVar[str | object] = ContextVar("_HERMES_HOME_OVERR
+ 
+ # TUI busy-indicator styles (CLI /indicator, TUI gateway config, /help registry).
+ # Keep in sync with INDICATOR_STYLES / DEFAULT_INDICATOR_STYLE in ui-tui/src/app/interfaces.ts.
+-INDICATOR_STYLES: tuple[str, ...] = ("ascii", "emoji", "kaomoji", "unicode")
++INDICATOR_STYLES: tuple[str, ...] = ("activity", "ascii", "emoji", "kaomoji", "unicode")
+ DEFAULT_INDICATOR_STYLE: str = "kaomoji"
+ 
+ 
+diff --git a/locales/ru.tui.yaml b/locales/ru.tui.yaml
+index e02416bf67..b1250dc4e2 100644
+--- a/locales/ru.tui.yaml
++++ b/locales/ru.tui.yaml
+@@ -1212,6 +1212,7 @@ status.fast: "fast"
+ status.mcpReloaded: "MCP перезагружен после изменения конфигурации"
+ status.paused: "⏸ пауза"
+ status.ready: "готов"
++status.copied: "скопировано"
+ status.resumesWhenSubagentFinishes: "↩ продолжит, когда завершится подагент"
+ status.resumesWhenSubagentsFinish: "↩ продолжит, когда завершатся подагенты ({0})"
+ status.running: "выполняется…"
+diff --git a/ui-tui/packages/hermes-ink/src/ink/hooks/use-selection.ts b/ui-tui/packages/hermes-ink/src/ink/hooks/use-selection.ts
+index ffd833d343..d721ebcd63 100644
+--- a/ui-tui/packages/hermes-ink/src/ink/hooks/use-selection.ts
++++ b/ui-tui/packages/hermes-ink/src/ink/hooks/use-selection.ts
+@@ -9,6 +9,7 @@ import { type FocusMove, type SelectionState, shiftAnchor } from '../selection.j
+  * Returns no-op functions when fullscreen mode is disabled.
+  */
+ export function useSelection(): {
++  getTextSelectionText: () => string
+   copySelection: () => Promise<string>
+   /** Copy without clearing the highlight (for copy-on-select). */
+   copySelectionNoClear: () => Promise<string>
+@@ -50,6 +51,7 @@ export function useSelection(): {
+   return useMemo(() => {
+     if (!ink) {
+       return {
++        getTextSelectionText: () => '',
+         copySelection: async () => '',
+         copySelectionNoClear: async () => '',
+         clearSelection: () => {},
+@@ -66,6 +68,7 @@ export function useSelection(): {
+     }
+ 
+     return {
++      getTextSelectionText: () => ink.getTextSelectionText(),
+       copySelection: () => ink.copySelection(),
+       copySelectionNoClear: () => ink.copySelectionNoClear(),
+       clearSelection: () => ink.clearTextSelection(),
+diff --git a/ui-tui/src/__tests__/appChromeStatusRule.test.tsx b/ui-tui/src/__tests__/appChromeStatusRule.test.tsx
+index 31eaf8555f..2ec4c80cb9 100644
+--- a/ui-tui/src/__tests__/appChromeStatusRule.test.tsx
++++ b/ui-tui/src/__tests__/appChromeStatusRule.test.tsx
+@@ -2,7 +2,7 @@ import React from 'react'
+ import { describe, expect, it, vi } from 'vitest'
+ 
+ import { StatusRule } from '../components/appChrome.js'
+-import { DEFAULT_THEME } from '../theme.js'
++import { DEFAULT_THEME, fromSkin } from '../theme.js'
+ 
+ type ReactNodeLike = React.ReactNode
+ 
+@@ -104,6 +104,23 @@ const baseProps = {
+   voiceLabel: ''
+ }
+ 
++describe('selection copy status', () => {
++  it('allows the skin to override only the copy confirmation label', () => {
++    const theme = fromSkin({}, { copy_notice: 'custom-copied' })
++    expect(textContent(StatusRule({ ...baseProps, clipboardCopied: true, t: theme }))).toContain('custom-copied')
++  })
++  it.each([40, 100])('shows a bright success label at the right edge at width %s', cols => {
++    const rule = StatusRule({ ...baseProps, cols, clipboardCopied: true, sessionTitle: 'Current session' })
++    expect(textContent(rule)).toContain('copied')
++    expect(textContent(rule)).not.toContain('Current session')
++    const label = findElementWithText(rule, 'copied')
++    const props = label?.props as { color?: string; bold?: boolean; dimColor?: boolean } | undefined
++    expect(props?.color).toBe(DEFAULT_THEME.color.statusGood)
++    expect(props?.bold).toBe(true)
++    expect(props?.dimColor).not.toBe(true)
++  })
++})
++
+ describe('StatusRule model label', () => {
+   it('shows a clamped effort as what the route sends, never as a distinct level (#61634)', () => {
+     const clamped = textContent(
+diff --git a/ui-tui/src/__tests__/createGatewayEventHandler.test.ts b/ui-tui/src/__tests__/createGatewayEventHandler.test.ts
+index 0f48af0132..01b36d335e 100644
+--- a/ui-tui/src/__tests__/createGatewayEventHandler.test.ts
++++ b/ui-tui/src/__tests__/createGatewayEventHandler.test.ts
+@@ -1,6 +1,7 @@
+ import type { ConnectionOperationTarget } from '@hermes/shared/gateway-events'
+ import { beforeEach, describe, expect, it, vi } from 'vitest'
+ 
++import { $activitySignal } from '../app/activityStore.js'
+ import {
+   $connectionOperation,
+   dismissConnectionOperation,
+@@ -9,6 +10,7 @@ import {
+ import { createGatewayEventHandler } from '../app/createGatewayEventHandler.js'
+ import { createServerRequestHandler } from '../app/createServerRequestHandler.js'
+ import { getOverlayState, patchOverlayState, resetOverlayState } from '../app/overlayStore.js'
++import { resetBubbleLedger } from '../app/pendingBubbles.js'
+ import { resetServerRequestsForTests } from '../app/serverRequestStore.js'
+ import { turnController } from '../app/turnController.js'
+ import { getTurnState, resetTurnState } from '../app/turnStore.js'
+@@ -91,10 +93,45 @@ describe('createGatewayEventHandler', () => {
+     resetTurnState()
+     resetServerRequestsForTests()
+     resetConnectionOperationsForTests()
++    resetBubbleLedger()
+     turnController.fullReset()
+     patchUiState({ showReasoning: true })
+   })
+ 
++  it('tracks real activity even when reasoning text is hidden and ignores other sessions', () => {
++    patchUiState({ sid: 'activity-session', showReasoning: false })
++    const onEvent = createGatewayEventHandler(buildCtx([]))
++    onEvent({ type: 'message.start', session_id: 'activity-session' } as any)
++    onEvent({ type: 'reasoning.delta', session_id: 'activity-session', payload: { text: 'Hidden reasoning' } } as any)
++    expect($activitySignal.get().phase).toBe('reasoning')
++    expect(getTurnState().reasoning).toBe('')
++    onEvent({ type: 'message.delta', session_id: 'other', payload: { text: 'Other reply' } } as any)
++    expect($activitySignal.get().phase).toBe('reasoning')
++    onEvent({ type: 'tool.generating', session_id: 'activity-session', payload: { name: 'read_file' } } as any)
++    expect($activitySignal.get().phase).toBe('preparing')
++    onEvent({ type: 'tool.start', session_id: 'activity-session', payload: { tool_id: 'read-1', name: 'read_file' } } as any)
++    expect(getTurnState().tools[0]?.name).toBe('read_file')
++    onEvent({ type: 'tool.complete', session_id: 'activity-session', payload: { tool_id: 'read-1', name: 'read_file' } } as any)
++    expect(getTurnState().tools).toHaveLength(0)
++    expect($activitySignal.get().phase).toBe('waiting')
++    turnController.fullReset()
++  })
++
++  it('preserves typed service starts once across queue transitions and repeated delivery', () => {
++    const appended: Msg[] = []
++    const onEvent = createGatewayEventHandler(buildCtx(appended))
++    patchUiState({ sid: 'service-session' })
++    const pending = { admission_id: 'service-admission', input_id: 'service-input', target_session_id: 'service-session',
++      target_profile_home: 'profile', status: 'queued', user: 'Opaque service payload\nPRIVATE_MEMORY' }
++    onEvent({ type: 'session.info', session_id: 'service-session', payload: { pending_submissions: [pending] } } as any)
++    const start = { type: 'message.start', session_id: 'service-session', admission_id: pending.admission_id,
++      payload: { display_kind: 'async_delegation_complete', text: pending.user } } as any
++    onEvent(start)
++    onEvent({ type: 'session.info', session_id: 'service-session', payload: { pending_submissions: [{ ...pending, status: 'started' }] } } as any)
++    onEvent(start)
++    expect(appended).toEqual([{ role: 'system', kind: 'notification', text: pending.user }])
++  })
++
+   it('displays generic errors without settling versioned execution', () => {
+     const ctx = buildCtx([])
+     const onEvent = createGatewayEventHandler(ctx)
+@@ -1070,6 +1107,25 @@ describe('createGatewayEventHandler', () => {
+     vi.unstubAllEnvs()
+   })
+ 
++  it.each([
++    ['user_message_bg', 'userMessageBg'],
++    ['input_bg', 'inputBg']
++  ] as const)('redraws when only the scoped %s background changes', (key, field) => {
++    const handle = createGatewayEventHandler(buildCtx([]))
++    handle({ payload: { colors: { background: '#1c1c1c', [key]: '#262626' } }, type: 'skin.changed' } as any)
++    expect(getUiState().theme[field]).toBe('#262626')
++    const schedule = vi.spyOn(globalThis, 'setTimeout')
++    try {
++      handle({ payload: { colors: { background: '#1c1c1c', [key]: '#000000' } }, type: 'skin.changed' } as any)
++      expect(schedule).toHaveBeenCalledWith(expect.any(Function), 40)
++    } finally {
++      schedule.mockRestore()
++    }
++    expect(getUiState().theme[field]).toBe('#000000')
++    handle({ payload: { colors: { background: '#1c1c1c' } }, type: 'skin.changed' } as any)
++    expect(getUiState().theme[field]).toBeUndefined()
++  })
++
+   it('a skin that owns the background paints BOTH terminal defaults (OSC 11 bg + OSC 10 fg)', () => {
+     // Default-fg tokens (markdown body, borders) render with the TERMINAL's
+     // default foreground. A dark skin on a light terminal repaints the
+diff --git a/ui-tui/src/__tests__/libTextI18n.test.ts b/ui-tui/src/__tests__/libTextI18n.test.ts
+index f1977fa415..670b2bb858 100644
+--- a/ui-tui/src/__tests__/libTextI18n.test.ts
++++ b/ui-tui/src/__tests__/libTextI18n.test.ts
+@@ -70,7 +70,7 @@ describe('libText catalog swap', () => {
+       { role: 'user', text: 'x', display_kind: 'async_delegation_complete', display_metadata: { task_count: 3 } }
+     ])
+ 
+-    expect(event?.text).toBe('XX 3 done')
++    expect(event?.notificationTitle).toBe('XX 3 done')
+   })
+ 
+   it('composer tokens and transcript trail prose follow the active catalog', () => {
+diff --git a/ui-tui/src/__tests__/messages.test.ts b/ui-tui/src/__tests__/messages.test.ts
+index 0e3c04b70d..3d8b0d3d2b 100644
+--- a/ui-tui/src/__tests__/messages.test.ts
++++ b/ui-tui/src/__tests__/messages.test.ts
+@@ -69,10 +69,10 @@ describe('toTranscriptMessages', () => {
+     ]
+ 
+     const result = toTranscriptMessages(rows)
+-    expect(result.map(msg => [msg.kind, msg.text])).toEqual([
++    expect(result.map(msg => [msg.kind, msg.notificationTitle ?? msg.text])).toEqual([
+       [undefined, 'do work'],
+       [undefined, 'done'],
+-      ['event', expect.stringContaining('3')],
++      ['notification', expect.stringContaining('3')],
+       [undefined, 'merged']
+     ])
+   })
+@@ -85,7 +85,7 @@ describe('toTranscriptMessages', () => {
+       { role: 'user', text, display_kind: 'async_delegation_complete', display_metadata: { display_text: title } }
+     ])
+ 
+-    expect(message).toMatchObject({ kind: 'event', role: 'system', text: title })
++    expect(message).toMatchObject({ kind: 'notification', role: 'system', text, notificationTitle: title })
+     expect(toTranscriptMessages([{ role: 'user', text }])[0]?.text).toBe(text)
+   })
+ 
+@@ -93,9 +93,9 @@ describe('toTranscriptMessages', () => {
+     const rows = [{ role: 'user', text: 'event', display_kind: 'async_delegation_complete' }]
+ 
+     const result = toTranscriptMessages(rows)
+-    expect(result[0]?.kind).toBe('event')
+-    expect(result[0]?.text).toBeTruthy()
+-    expect(result[0]?.text).not.toBe('event')
++    expect(result[0]?.kind).toBe('notification')
++    expect(result[0]?.text).toBe('event')
++    expect(result[0]?.notificationTitle).toBeTruthy()
+   })
+ })
+ 
+diff --git a/ui-tui/src/__tests__/useSessionLifecycle.test.ts b/ui-tui/src/__tests__/useSessionLifecycle.test.ts
+index 81dfa63221..7c70de789b 100644
+--- a/ui-tui/src/__tests__/useSessionLifecycle.test.ts
++++ b/ui-tui/src/__tests__/useSessionLifecycle.test.ts
+@@ -78,9 +78,10 @@ describe('live session activation in-flight state', () => {
+ 
+     expect(liveSessionInflightMessages(inflight)).toEqual([
+       {
+-        kind: 'event',
++        kind: 'notification',
+         role: 'system',
+-        text: 'Finished syncing the workspace'
++        text: 'process completed',
++        notificationTitle: 'Finished syncing the workspace'
+       }
+     ])
+   })
+diff --git a/ui-tui/src/__tests__/virtualHeights.test.ts b/ui-tui/src/__tests__/virtualHeights.test.ts
+index d6076fe5f7..8f65c5082d 100644
+--- a/ui-tui/src/__tests__/virtualHeights.test.ts
++++ b/ui-tui/src/__tests__/virtualHeights.test.ts
+@@ -35,6 +35,22 @@ describe('virtual height estimates', () => {
+     )
+   })
+ 
++  it('omits group-boundary spacer rows in compact mode', () => {
++    const msg: Msg = { role: 'assistant', text: 'reply' }
++
++    expect(estimatedMsgHeight(msg, 80, { compact: true, details: false, leadGap: true })).toBe(
++      estimatedMsgHeight(msg, 80, { compact: true, details: false, leadGap: false })
++    )
++  })
++
++  it('omits the two service spacer rows around assistant details in compact mode', () => {
++    const msg: Msg = { role: 'assistant', text: 'reply', tools: ['Tool A'] }
++
++    expect(estimatedMsgHeight(msg, 80, { compact: false, details: true })).toBe(
++      estimatedMsgHeight(msg, 80, { compact: true, details: true }) + 2
++    )
++  })
++
+   it('includes detail sections when visible', () => {
+     const msg: Msg = { role: 'assistant', text: 'ok', thinking: 'line 1\nline 2', tools: ['Tool A', 'Tool B'] }
+ 
+diff --git a/ui-tui/src/app/createGatewayEventHandler.ts b/ui-tui/src/app/createGatewayEventHandler.ts
+index c435d29b02..51925adb37 100644
+--- a/ui-tui/src/app/createGatewayEventHandler.ts
++++ b/ui-tui/src/app/createGatewayEventHandler.ts
+@@ -10,6 +10,7 @@ import { STARTUP_IMAGE, STARTUP_QUERY } from '../config/env.js'
+ import { STREAM_BATCH_MS } from '../config/timing.js'
+ import { buildSetupRequiredSections, setupRequiredTitle } from '../content/setup.js'
+ import { usageFromTick } from '../domain/usage.js'
++import { asServiceNotification, isServiceNotificationKind } from '../domain/serviceNotifications.js'
+ import type {
+   AnyGatewayEvent,
+   ConfigFullResponse,
+@@ -30,6 +31,7 @@ import { bootSeededPin, invalidateBootBackground, writeBootTheme } from '../lib/
+ import { defaultThemeForCurrentBackground, fromSkin, skinIsLight, type Theme, themeToneHex } from '../theme.js'
+ import type { Msg, SessionInfo, SubagentProgress } from '../types.js'
+ 
++import { observeActivity } from './activityStore.js'
+ import { applyConnectionRequest, applyConnectionUpdate } from './connectionOperationStore.js'
+ import { applyDelegationStatus, getDelegationState } from './delegationStore.js'
+ import { createBillingVerificationPresenter, createFreeTierChallengePresenter } from './gatewayBrowserLinks.js'
+@@ -44,7 +46,7 @@ import { reportGatewayStartTimeout } from './gatewayStartTimeout.js'
+ import type { GatewayEventHandlerContext, NoticeLevel } from './interfaces.js'
+ import { applyControlSnapshot } from './loopStatus.js'
+ import { getOverlayState, patchOverlayState, SENSITIVE_PROMPTS } from './overlayStore.js'
+-import { markBubbleShown, newlyStartedRows } from './pendingBubbles.js'
++import { hasBubbleShown, markBubbleShown, newlyStartedRows } from './pendingBubbles.js'
+ import { flashGoodVibes, flashPet } from './petFlashStore.js'
+ import { forgetServerRequest } from './serverRequestStore.js'
+ import { noteCanonicalCompletion } from './slash/canonicalSessionCommands.js'
+@@ -189,7 +191,14 @@ const themesEqual = (a: Theme, b: Theme) => {
+   }
+ 
+   return (
++    a.background === b.background &&
++    a.userMessageBg === b.userMessageBg &&
++    a.inputBg === b.inputBg &&
++    a.clarify?.background === b.clarify?.background &&
++    a.clarify?.text === b.clarify?.text &&
++    a.clarify?.selectedBg === b.clarify?.selectedBg &&
+     a.brand.name === b.brand.name &&
++    a.brand.copyNotice === b.brand.copyNotice &&
+     a.brand.prompt === b.brand.prompt &&
+     a.bannerLogo === b.bannerLogo &&
+     a.bannerHero === b.bannerHero
+@@ -661,7 +670,8 @@ function applySessionInfo(payload: unknown, { appendMessage, setHistoryItems, se
+   // authority starts it, so it lands after the previous assistant reply.
+   for (const started of newlyStartedRows(current?.pending_submissions, incoming.pending_submissions)) {
+     markBubbleShown(started.input_id)
+-    appendMessage({ role: 'user', text: started.user })
++    markBubbleShown(started.admission_id)
++    appendMessage(asServiceNotification({ role: 'user', text: started.user }))
+   }
+ 
+   // A replayed snapshot can be the only terminal signal after reconnect.
+@@ -1198,6 +1208,8 @@ export function createGatewayEventHandler(ctx: GatewayEventHandlerContext): (ev:
+       return
+     }
+ 
++    observeActivity(ev, sid ?? '')
++
+     switch (ev.type) {
+       case 'connection.request':
+         if (ev.payload) {
+@@ -1286,11 +1298,20 @@ export function createGatewayEventHandler(ctx: GatewayEventHandlerContext): (ev:
+ 
+         return
+ 
+-      case 'message.start':
++      case 'message.start': {
+         resetAgentsNudgeTurnState()
++        const payload = ev.payload
++        if (isServiceNotificationKind(payload?.display_kind) && typeof payload?.text === 'string' && payload.text.trim()) {
++          const admissionId = ev.admission_id
++          if (!hasBubbleShown(admissionId)) {
++            markBubbleShown(admissionId)
++            appendMessage(asServiceNotification({ role: 'system', text: payload.text }, true, payload.display_text ?? undefined))
++          }
++        }
+         turnController.startMessage()
+ 
+         return
++      }
+       case 'status.update': {
+         const p = ev.payload
+ 
+diff --git a/ui-tui/src/app/interfaces.ts b/ui-tui/src/app/interfaces.ts
+index ea2370665b..0b6599fd9b 100644
+--- a/ui-tui/src/app/interfaces.ts
++++ b/ui-tui/src/app/interfaces.ts
+@@ -76,7 +76,7 @@ export interface Notice {
+ // derived from this tuple so adding/removing a style only touches one
+ // line — `useConfigSync` (validation) and `session.ts` (slash arg
+ // validation + usage hint) both import it.
+-export const INDICATOR_STYLES = ['ascii', 'emoji', 'kaomoji', 'unicode'] as const
++export const INDICATOR_STYLES = ['activity', 'ascii', 'emoji', 'kaomoji', 'unicode'] as const
+ export type IndicatorStyle = (typeof INDICATOR_STYLES)[number]
+ export const DEFAULT_INDICATOR_STYLE: IndicatorStyle = 'kaomoji'
+ 
+diff --git a/ui-tui/src/app/pendingBubbles.ts b/ui-tui/src/app/pendingBubbles.ts
+index 10355ff1c9..42984775af 100644
+--- a/ui-tui/src/app/pendingBubbles.ts
++++ b/ui-tui/src/app/pendingBubbles.ts
+@@ -8,6 +8,7 @@ export type PendingRow = NonNullable<SessionInfo['pending_submissions']>[number]
+ const shown = new Set<string>()
+ 
+ export const markBubbleShown = (inputId?: string) => { if (inputId) { shown.add(inputId) } }
++export const hasBubbleShown = (inputId?: string) => Boolean(inputId && shown.has(inputId))
+ export const resetBubbleLedger = () => shown.clear()
+ 
+ // Rows the authority just moved queued → started whose bubble nobody painted.
+@@ -17,7 +18,8 @@ export function newlyStartedRows(previous: PendingRow[] | undefined, incoming: P
+   if (!previous || !incoming) { return [] }
+   const wasQueued = new Set(previous.filter(row => row.status === 'queued').map(row => row.admission_id))
+ 
+-  return incoming.filter(row => row.status === 'started' && wasQueued.has(row.admission_id) && !(row.input_id && shown.has(row.input_id)))
++  return incoming.filter(row => row.status === 'started' && wasQueued.has(row.admission_id)
++    && !hasBubbleShown(row.input_id) && !hasBubbleShown(row.admission_id))
+ }
+ 
+ export const isServerQueued = (row: PendingRow) => row.status === 'queued' || row.status === 'unknown'
+diff --git a/ui-tui/src/app/slash/commands/session.ts b/ui-tui/src/app/slash/commands/session.ts
+index b8b8386417..112a8bb6a2 100644
+--- a/ui-tui/src/app/slash/commands/session.ts
++++ b/ui-tui/src/app/slash/commands/session.ts
+@@ -612,7 +612,7 @@ export const sessionCommands: SlashCommand[] = [
+   },
+ 
+   {
+-    help: 'pick the busy indicator: kaomoji (default), emoji, unicode (braille), or ascii',
++    help: 'pick the busy indicator: activity (live status), kaomoji, emoji, unicode, or ascii',
+     name: 'indicator',
+     usage: `/indicator [${INDICATOR_STYLES.join('|')}]`,
+     run: (arg, ctx) => {
+diff --git a/ui-tui/src/app/useMainApp.ts b/ui-tui/src/app/useMainApp.ts
+index d287657e62..b9f5f45d9c 100644
+--- a/ui-tui/src/app/useMainApp.ts
++++ b/ui-tui/src/app/useMainApp.ts
+@@ -53,6 +53,7 @@ import { createServerRequestHandler } from './createServerRequestHandler.js'
+ import { createSlashHandler } from './createSlashHandler.js'
+ import { planGatewayRecovery } from './gatewayRecovery.js'
+ import { getInputSelection } from './inputSelectionStore.js'
++import { clipboardFeedback } from './clipboardFeedback.js'
+ import { type GatewayRpc, type SlashHandler, type StateSetter, type TranscriptRow, type UiState } from './interfaces.js'
+ import { requestLiveSessions } from './liveSessions.js'
+ import { applyControlSnapshot } from './loopStatus.js'
+@@ -364,7 +365,6 @@ export function useMainApp(gw: GatewayClient) {
+ 
+   const hasSelection = useHasSelection()
+   const selection = useSelection()
+-  const lastCopiedVersionRef = useRef(-1)
+ 
+   useEffect(() => {
+     selection.setSelectionBgColor(ui.theme.color.selectionBg)
+@@ -383,34 +383,14 @@ export function useMainApp(gw: GatewayClient) {
+   // copy-on-select: once a drag creates a stable TUI selection, write it to
+   // the system clipboard while keeping the highlight visible.
+   //
+-  // Subscribe directly via the ink selection bus (not useSyncExternalStore)
+-  // so React doesn't re-render MainApp on every drag-move tick. The version
+-  // ref de-dupes against re-entrant notifications.
++  // Observe release transitions without re-rendering MainApp on every drag tick.
+   useEffect(() => {
+     if (!isMac) {
+       return
+     }
+ 
+-    return selection.subscribe(() => {
+-      if (!selection.hasSelection()) {
+-        return
+-      }
+-
+-      const state = selection.getState() as { isDragging?: boolean } | null
+-
+-      if (state?.isDragging) {
+-        return
+-      }
+-
+-      const version = selection.version()
+-
+-      if (version === lastCopiedVersionRef.current) {
+-        return
+-      }
+-
+-      lastCopiedVersionRef.current = version
+-      void selection.copySelectionNoClear()
+-    })
++    return clipboardFeedback.watchSelection(selection,
++      process.env.SSH_CONNECTION || process.env.SSH_TTY ? () => { void selection.copySelectionNoClear() } : undefined)
+   }, [selection])
+ 
+   const clearSelection = useCallback(() => {
+diff --git a/ui-tui/src/components/appChrome.tsx b/ui-tui/src/components/appChrome.tsx
+index 967f269065..15f2813dd1 100644
+--- a/ui-tui/src/components/appChrome.tsx
++++ b/ui-tui/src/components/appChrome.tsx
+@@ -20,6 +20,7 @@ import { useScrollbarSnapshot, useViewportSnapshot } from '../lib/viewportStore.
+ import type { Theme } from '../theme.js'
+ import type { Msg } from '../types.js'
+ 
++import { ActivityTicker } from './activityTicker.js'
+ import { scrollbarColors } from './overlayPrimitives.js'
+ 
+ const FACE_TICK_MS = 2500
+@@ -532,6 +533,7 @@ export function GoodVibesHeart({ tick, t }: { tick: number; t: Theme }) {
+ 
+ export function StatusRule({
+   battery,
++  clipboardCopied = false,
+   focusView,
+   cwdLabel,
+   cols,
+@@ -607,8 +609,9 @@ export function StatusRule({
+   // yields first. The busy face width depends on the active /indicator style
+   // (kaomoji is wide + verb; unicode is a bare 1-col spinner). When a notice
+   // occupies the slot it reserves only `noticeReserve` (it shrinks/truncates).
++  const activityWidth = Math.min(54, Math.max(10, cols - batteryWidth - stringWidth(modelText) - stringWidth(ctxLabel) - 12))
+   const slotWidth = busy
+-    ? busyIndicatorWidth(indicatorStyle, turnStartedAt != null)
++    ? indicatorStyle === 'activity' ? activityWidth : busyIndicatorWidth(indicatorStyle, turnStartedAt != null)
+     : showNotice
+       ? noticeReserve
+       : stringWidth(status)
+@@ -621,8 +624,8 @@ export function StatusRule({
+     stringWidth(modelText) +
+     (ctxLabel ? stringWidth(' │ ') + stringWidth(ctxLabel) : 0)
+ 
+-  const rightLabel = sessionTitle && ok('title') ? ` ${sessionTitle} ` : cwdLabel
+-  const { leftWidth, rightWidth, separatorWidth } = statusRuleWidths(cols, rightLabel, essentialWidth)
++  const rightLabel = clipboardCopied ? (t.brand.copyNotice || T.status.copied) : sessionTitle && ok('title') ? ` ${sessionTitle} ` : cwdLabel
++  const { leftWidth, rightWidth, separatorWidth } = statusRuleWidths(cols, rightLabel, clipboardCopied ? 0 : essentialWidth)
+ 
+   // Whole-segment progressive disclosure for the tail: a segment renders only
+   // if it fits in the space left after the pinned essentials, evaluated in
+@@ -734,9 +737,11 @@ export function StatusRule({
+               <Text color={t.color.muted}>{' │ '}</Text>
+             </Text>
+           ) : null}
+-          {busy ? (
++          {busy && indicatorStyle === 'activity' ? (
++            <ActivityTicker t={t} width={activityWidth} compacting={compacting} />
++          ) : busy ? (
+             <FaceTicker
+-              color={statusColor}
++              color={t.color.statusGood}
+               startedAt={turnStartedAt}
+               style={indicatorStyle}
+               verbOverride={compacting ? T.status.compacting : undefined}
+@@ -881,7 +886,7 @@ export function StatusRule({
+         <>
+           <Text color={t.color.border}>{separatorWidth >= 3 ? ' ─ ' : ' '}</Text>
+           <Box flexShrink={0} width={rightWidth}>
+-            <Text bold={!!sessionTitle} color={sessionTitle ? t.color.accent : t.color.label} wrap="truncate-end">
++            <Text bold={clipboardCopied || !!sessionTitle} color={clipboardCopied ? t.color.statusGood : sessionTitle ? t.color.accent : t.color.label} wrap="truncate-end">
+               {rightLabel}
+             </Text>
+           </Box>
+@@ -987,6 +992,7 @@ export function TranscriptScrollbar({ scrollRef, t }: TranscriptScrollbarProps)
+ 
+ interface StatusRuleProps {
+   battery?: BatteryInfo | null
++  clipboardCopied?: boolean
+   // Focus view (/focus) badge — display-only reduced-output indicator.
+   focusView?: boolean
+   bgCount: number
+diff --git a/ui-tui/src/components/appLayout.tsx b/ui-tui/src/components/appLayout.tsx
+index 1abd583824..d6bce13646 100644
+--- a/ui-tui/src/components/appLayout.tsx
++++ b/ui-tui/src/components/appLayout.tsx
+@@ -10,6 +10,7 @@ import type { AppLayoutProps } from '../app/interfaces.js'
+ import { $isBlocked, $overlayState, patchOverlayState } from '../app/overlayStore.js'
+ import { $petBox } from '../app/petFlashStore.js'
+ import { $uiState } from '../app/uiStore.js'
++import { clipboardFeedback } from '../app/clipboardFeedback.js'
+ import { usePet } from '../app/usePet.js'
+ import { $voicePartial } from '../app/voicePartialStore.js'
+ import { INLINE_MODE, NATIVE_MODE, SHOW_FPS, TERMUX_TUI_MODE } from '../config/env.js'
+@@ -432,7 +433,7 @@ const ComposerPane = memo(function ComposerPane({
+         {!isBlocked && (
+           <>
+             {composer.inputBuf.map((line, i) => (
+-              <Box key={i}>
++              <Box backgroundColor={ui.theme.inputBg} key={i}>
+                 <Box width={promptWidth}>
+                   {i === 0 ? (
+                     <PromptPrefix color={ui.theme.color.muted} promptText={promptText} width={promptWidth} />
+@@ -446,6 +447,7 @@ const ComposerPane = memo(function ComposerPane({
+             ))}
+ 
+             <Box
++              backgroundColor={ui.theme.inputBg}
+               onMouseDown={captureInputDrag}
+               onMouseDrag={dragFromPromptRow}
+               onMouseUp={endInputDrag}
+@@ -534,6 +536,7 @@ const StatusRulePane = memo(function StatusRulePane({
+   status
+ }: Pick<AppLayoutProps, 'composer' | 'status'> & { at: 'bottom' | 'top'; nativeMode: boolean }) {
+   const ui = useStore($uiState)
++  const clipboardCopied = useStore(clipboardFeedback.visible)
+ 
+   if (ui.statusBar === 'off' || (nativeMode ? at !== 'top' : ui.statusBar !== at)) {
+     return null
+@@ -543,6 +546,7 @@ const StatusRulePane = memo(function StatusRulePane({
+     <Box marginTop={at === 'top' ? 1 : 0}>
+       <StatusRule
+         battery={ui.battery ? ui.batteryStatus : null}
++        clipboardCopied={clipboardCopied}
+         bgCount={ui.bgTasks.size}
+         busy={ui.busy}
+         cols={composer.cols}
+@@ -596,7 +600,12 @@ export const AppLayout = memo(function AppLayout({
+ 
+   return (
+     <Shell {...shellProps}>
+-      <Box flexDirection="column" flexGrow={1} position={NATIVE_MODE ? undefined : 'relative'}>
++      <Box
++        backgroundColor={ui.theme.background}
++        flexDirection="column"
++        flexGrow={1}
++        position={NATIVE_MODE ? undefined : 'relative'}
++      >
+         <Box flexDirection="row" flexGrow={1}>
+           {!overlay.agents && !overlay.journey && <AmbientRail side="left" />}
+           {overlay.agents ? (
+diff --git a/ui-tui/src/components/messageLine.tsx b/ui-tui/src/components/messageLine.tsx
+index def92f2185..cfb08b7470 100644
+--- a/ui-tui/src/components/messageLine.tsx
++++ b/ui-tui/src/components/messageLine.tsx
+@@ -8,6 +8,7 @@ import { hasLeadGap } from '../domain/blockLayout.js'
+ import { splitComposerHighlights } from '../domain/composerHighlights.js'
+ import { sectionMode } from '../domain/details.js'
+ import { userDisplay } from '../domain/messages.js'
++import { serviceNotificationTitle } from '../domain/serviceNotifications.js'
+ import { ROLE } from '../domain/roles.js'
+ import { useT } from '../i18n/useT.js'
+ import { transcriptBodyWidth, transcriptGutterWidth } from '../lib/inputMetrics.js'
+@@ -79,12 +80,26 @@ export const MessageLine = memo(function MessageLine({
+   // block that renders nothing — e.g. a tool trail hidden by /details — emits
+   // no floating gap. Streaming-safe: the gap is derived from the stable
+   // predecessor, never this block's own live content. See domain/blockLayout.
+-  const leadGap = hasLeadGap(prev, msg)
++  const leadGap = !compact && hasLeadGap(prev, msg)
+ 
+   // Collapse toggle for long system messages
+   const systemIsLong = msg.role === 'system' && msg.text.length > SYSTEM_COLLAPSE_CHARS
+   const [systemOpen, setSystemOpen] = useState(false)
+ 
++  const notificationTitle = serviceNotificationTitle(msg)
++  if (notificationTitle !== null) {
++    return (
++      <Box flexDirection="column" width="100%">
++        <Box flexShrink={0} height={1} onClick={() => setSystemOpen(value => !value)}>
++          <Text color={t.color.muted} wrap="truncate-end">
++            {systemOpen ? '▾ ' : '▸ '}{notificationTitle}
++          </Text>
++        </Box>
++        {systemOpen && <Ansi>{sanitizeAnsiForRender(msg.text)}</Ansi>}
++      </Box>
++    )
++  }
++
+   if (msg.kind === 'trail' && msg.todos?.length) {
+     return (
+       <TodoPanel
+@@ -152,7 +167,7 @@ export const MessageLine = memo(function MessageLine({
+     const eventGutterWidth = transcriptGutterWidth('system', t.brand.prompt)
+ 
+     return (
+-      <Box marginBottom={1} marginTop={leadGap ? 1 : 0}>
++      <Box marginBottom={compact ? 0 : 1} marginTop={leadGap ? 1 : 0}>
+         <NoSelect flexShrink={0} fromLeftEdge width={eventGutterWidth}>
+           <Text> </Text>
+         </NoSelect>
+@@ -272,12 +287,13 @@ export const MessageLine = memo(function MessageLine({
+ 
+   return (
+     <Box
++      backgroundColor={msg.role === 'user' ? t.userMessageBg : undefined}
+       flexDirection="column"
+       marginBottom={msg.role === 'user' || isDiffSegment ? 1 : 0}
+       marginTop={msg.role === 'user' || msg.kind === 'slash' || isDiffSegment || leadGap ? 1 : 0}
+     >
+       {showDetails && (
+-        <Box flexDirection="column" marginBottom={1}>
++        <Box flexDirection="column" marginBottom={compact ? 0 : 1}>
+           <ToolTrail
+             commandOverride={detailsModeCommandOverride}
+             detailsMode={detailsMode}
+@@ -294,7 +310,7 @@ export const MessageLine = memo(function MessageLine({
+       )}
+ 
+       {showResponseSeparator && (
+-        <Box marginBottom={1}>
++        <Box marginBottom={compact ? 0 : 1}>
+           <NoSelect flexShrink={0} fromLeftEdge width={gutterWidth}>
+             <Text color={t.color.border}>└─ </Text>
+           </NoSelect>
+diff --git a/ui-tui/src/components/prompts.tsx b/ui-tui/src/components/prompts.tsx
+index 4f36dff1c0..1c1831bae0 100644
+--- a/ui-tui/src/components/prompts.tsx
++++ b/ui-tui/src/components/prompts.tsx
+@@ -148,8 +148,19 @@ export function ApprovalPrompt({ cols = 80, onChoice, req, t }: ApprovalPromptPr
+   )
+ }
+ 
+-export function ClarifyPrompt({ cols = 80, onCancel, onQuestionAnswer, req, t }: ClarifyPromptProps) {
++export function ClarifyPrompt({ cols = 80, onCancel, onQuestionAnswer, req, t: baseTheme }: ClarifyPromptProps) {
+   const T = useT()
++
++  const t: Theme = {
++    ...baseTheme,
++    color: {
++      ...baseTheme.color,
++      text: baseTheme.clarify?.text ?? baseTheme.color.text,
++      muted: baseTheme.clarify?.text ?? baseTheme.color.muted,
++      completionCurrentBg: baseTheme.clarify?.selectedBg ?? baseTheme.color.completionCurrentBg
++    }
++  }
++
+   const [sel, setSel] = useState(0)
+   const [custom, setCustom] = useState('')
+   const [typing, setTyping] = useState(false)
+@@ -311,7 +322,7 @@ export function ClarifyPrompt({ cols = 80, onCancel, onQuestionAnswer, req, t }:
+       : T.prompt.clarify.hint(enterAction)
+ 
+   return (
+-    <Box flexDirection="column">
++    <Box backgroundColor={t.clarify?.background} flexDirection="column" paddingX={t.clarify?.background ? 1 : 0}>
+       <Text bold>
+         <Text color={t.color.accent}>ask</Text>
+         <Text color={t.color.text}>
+diff --git a/ui-tui/src/components/textInput.tsx b/ui-tui/src/components/textInput.tsx
+index daca6ae643..eea2366cc2 100644
+--- a/ui-tui/src/components/textInput.tsx
++++ b/ui-tui/src/components/textInput.tsx
+@@ -3,6 +3,7 @@ import * as Ink from '@hermes/ink'
+ import { type MutableRefObject, useEffect, useMemo, useRef, useState } from 'react'
+ 
+ import { setInputSelection } from '../app/inputSelectionStore.js'
++import { clipboardFeedback } from '../app/clipboardFeedback.js'
+ import { highlightMask, highlightsStable } from '../domain/composerHighlights.js'
+ import { readClipboardText, writeClipboardText } from '../lib/clipboard.js'
+ import { cursorLayout, offsetFromPosition } from '../lib/inputMetrics.js'
+@@ -1355,7 +1356,7 @@ export function TextInput({
+     const normalized = selRange()
+ 
+     if (isMac && normalized) {
+-      void writeClipboardText(vRef.current.slice(normalized.start, normalized.end))
++      void clipboardFeedback.copyText(vRef.current.slice(normalized.start, normalized.end))
+     }
+   }
+ 
+diff --git a/ui-tui/src/domain/messages.ts b/ui-tui/src/domain/messages.ts
+index 9af6ac3eae..cb63e2a434 100644
+--- a/ui-tui/src/domain/messages.ts
++++ b/ui-tui/src/domain/messages.ts
+@@ -3,6 +3,8 @@ import { t } from '../i18n/runtime.js'
+ import { buildToolTrailLine } from '../lib/text.js'
+ import type { Msg, SessionInfo } from '../types.js'
+ 
++import { asServiceNotification, isServiceNotificationKind } from './serviceNotifications.js'
++
+ export const introMsg = (info: SessionInfo): Msg => ({ info, kind: 'intro', role: 'system', text: '' })
+ 
+ export const userDisplay = (text: string) => {
+@@ -72,27 +74,16 @@ export const toTranscriptMessages = (rows: unknown): Msg[] => {
+       continue
+     }
+ 
+-    if (display_kind === 'async_delegation_complete' || display_kind === 'process_complete') {
++    if (isServiceNotificationKind(display_kind)) {
+       const meta = (row as TranscriptRow).display_metadata
+-      const count = meta && typeof meta.task_count === 'number' ? meta.task_count : undefined
+-
+-      const label =
+-        display_kind === 'process_complete'
+-          ? t('libText.messages.backgroundProcessFinished')
+-          : count === undefined
+-            ? t('libText.messages.backgroundAgentWorkFinished')
+-            : t(
+-                count === 1
+-                  ? 'libText.messages.backgroundAgentsFinishedOne'
+-                  : 'libText.messages.backgroundAgentsFinishedOther',
+-                count
+-              )
+-
+-      out.push({
+-        kind: 'event',
+-        role: 'system',
+-        text: typeof meta?.display_text === 'string' ? meta.display_text : label
+-      })
++      const count = typeof meta?.task_count === 'number' ? meta.task_count : undefined
++      const title = typeof meta?.display_text === 'string' ? meta.display_text
++        : display_kind === 'process_complete' ? t('libText.messages.backgroundProcessFinished')
++        : display_kind === 'async_delegation_complete'
++          ? count === undefined ? t('libText.messages.backgroundAgentWorkFinished')
++            : t(count === 1 ? 'libText.messages.backgroundAgentsFinishedOne' : 'libText.messages.backgroundAgentsFinishedOther', count)
++          : undefined
++      out.push(asServiceNotification({ role: 'system', text, ...(createdAt !== undefined && { createdAt }) }, true, title))
+       pending = []
+ 
+       continue
+@@ -102,7 +93,12 @@ export const toTranscriptMessages = (rows: unknown): Msg[] => {
+       out.push({ role, text, ...(createdAt !== undefined && { createdAt }), ...(pending.length && { tools: pending }) })
+       pending = []
+     } else if (role === 'user' || role === 'system') {
+-      out.push({ role, text, ...(createdAt !== undefined && { createdAt }) })
++      out.push(
++        asServiceNotification(
++          { role, text, ...(createdAt !== undefined && { createdAt }) },
++          display_kind === 'internal_notification'
++        )
++      )
+       pending = []
+     }
+   }
+diff --git a/ui-tui/src/i18n/en/chrome.ts b/ui-tui/src/i18n/en/chrome.ts
+index c06f9df630..bbd0d52812 100644
+--- a/ui-tui/src/i18n/en/chrome.ts
++++ b/ui-tui/src/i18n/en/chrome.ts
+@@ -4,6 +4,7 @@
+ 
+ export const chromeEn = {
+   status: {
++    copied: 'copied',
+     summoning: 'summoning hermes…',
+     ready: 'ready',
+     running: 'running…',
+diff --git a/ui-tui/src/lib/virtualHeights.ts b/ui-tui/src/lib/virtualHeights.ts
+index cf1ebd95d7..c5dc8bb29f 100644
+--- a/ui-tui/src/lib/virtualHeights.ts
++++ b/ui-tui/src/lib/virtualHeights.ts
+@@ -1,4 +1,5 @@
+ import { TERMUX_TUI_MODE } from '../config/env.js'
++import { serviceNotificationTitle } from '../domain/serviceNotifications.js'
+ import type { Msg } from '../types.js'
+ 
+ import { transcriptBodyWidth } from './inputMetrics.js'
+@@ -93,6 +94,10 @@ export const estimatedMsgHeight = (
+     return msg.info?.version ? 9 : 5
+   }
+ 
++  if (serviceNotificationTitle(msg) !== null) {
++    return 1
++  }
++
+   if (msg.kind === 'panel') {
+     return Math.max(3, (msg.panelData?.sections.length ?? 1) * 2 + 1)
+   }
+@@ -129,7 +134,7 @@ export const estimatedMsgHeight = (
+         (hasVisibleThinking ? (thinkingExpanded ? wrappedLines(msg.thinking ?? '', bodyWidth) : 1) : 0)
+ 
+       if (msg.role === 'assistant' && /\S/.test(msg.text)) {
+-        h += 2
++        h += compact ? 0 : 2
+       }
+     }
+   }
+@@ -147,7 +152,7 @@ export const estimatedMsgHeight = (
+   // the previous row (see domain/blockLayout.ts::hasLeadGap) and passes the
+   // result here so the estimate matches the rendered marginTop before Yoga
+   // remeasures. user / diff / slash never set this — they own their margins.
+-  if (leadGap) {
++  if (leadGap && !compact) {
+     h++
+   }
+ 
+diff --git a/ui-tui/src/theme.ts b/ui-tui/src/theme.ts
+index 4122a623d7..6f7cb58d26 100644
+--- a/ui-tui/src/theme.ts
++++ b/ui-tui/src/theme.ts
+@@ -51,6 +51,7 @@ export interface ThemeColors {
+ }
+ 
+ export interface ThemeBrand {
++  copyNotice?: string
+   name: string
+   icon: string
+   prompt: string
+@@ -61,6 +62,14 @@ export interface ThemeBrand {
+ }
+ 
+ export interface Theme {
++  background?: string
++  userMessageBg?: string
++  inputBg?: string
++  clarify?: {
++    background?: string
++    text?: string
++    selectedBg?: string
++  }
+   color: ThemeColors
+   brand: ThemeBrand
+   bannerLogo: string
+@@ -943,6 +952,14 @@ export function fromSkin(
+ 
+   return normalizeThemeForAnsiLightTerminal(
+     {
++      background: skinBg ?? undefined,
++      userMessageBg: authoredBackground(c('user_message_bg') ?? '') ?? undefined,
++      inputBg: authoredBackground(c('input_bg') ?? '') ?? undefined,
++      clarify: {
++        background: c('clarify_bg'),
++        text: c('clarify_text'),
++        selectedBg: c('clarify_selected_bg')
++      },
+       // The element tokens theme-sdk introduced (ui_primary, ui_text,
+       // ui_border, ui_ok/warn/error, ui_tool, ui_thinking, shell_dollar,
+       // status_bar_*, diff_*) are read into `seeds`/`assembled` above and
+@@ -953,6 +970,7 @@ export function fromSkin(
+       color: adapted,
+ 
+       brand: {
++        copyNotice: branding['copy_notice'],
+         name: branding.agent_name ?? d.brand.name,
+         icon: d.brand.icon,
+         prompt: cleanPromptSymbol(branding.prompt_symbol, d.brand.prompt),
+diff --git a/ui-tui/src/types.ts b/ui-tui/src/types.ts
+index 97c52b8825..cbb2290393 100644
+--- a/ui-tui/src/types.ts
++++ b/ui-tui/src/types.ts
+@@ -136,7 +136,8 @@ export interface ClarifyReq {
+ 
+ export interface Msg {
+   info?: SessionInfo
+-  kind?: 'diff' | 'event' | 'intro' | 'panel' | 'slash' | 'trail'
++  notificationTitle?: string
++  kind?: 'diff' | 'event' | 'intro' | 'notification' | 'panel' | 'slash' | 'trail'
+   panelData?: PanelData
+   role: Role
+   text: string
+diff --git a/ui-tui/src/types/hermes-ink.d.ts b/ui-tui/src/types/hermes-ink.d.ts
+index 2510907a49..1edb6aa41c 100644
+--- a/ui-tui/src/types/hermes-ink.d.ts
++++ b/ui-tui/src/types/hermes-ink.d.ts
+@@ -152,6 +152,7 @@ declare module '@hermes/ink' {
+   export function withInkSuspended(run: RunExternalProcess): Promise<void>
+   export function useInput(handler: InputHandler, options?: { readonly isActive?: boolean }): void
+   export function useSelection(): {
++    readonly getTextSelectionText: () => string
+     readonly copySelection: () => Promise<string>
+     readonly copySelectionNoClear: () => Promise<string>
+     readonly clearSelection: () => void
+diff --git a/ui-tui/src/__tests__/activityStatus.test.ts b/ui-tui/src/__tests__/activityStatus.test.ts
+new file mode 100644
+index 0000000000..8b01c54210
+--- /dev/null
++++ b/ui-tui/src/__tests__/activityStatus.test.ts
+@@ -0,0 +1,93 @@
++import { stringWidth } from '@hermes/ink'
++import { beforeEach, describe, expect, it } from 'vitest'
++
++import { $activitySignal, observeActivity } from '../app/activityStore.js'
++import { ActivityStatus } from '../lib/activityStatus.js'
++
++beforeEach(() => $activitySignal.set({ phase: 'waiting', sessionId: '', since: 0 }))
++
++describe('event-backed activity status', () => {
++  it.each([
++    [-1, 'statusGood'],
++    [0, 'statusGood'],
++    [10 * 60_000 - 1, 'statusGood'],
++    [10 * 60_000, 'statusWarn'],
++    [60 * 60_000 - 1, 'statusWarn'],
++    [60 * 60_000, 'statusCritical'],
++    [61 * 60_000, 'statusCritical']
++  ] as const)('selects the duration color at %s ms', (elapsed, expected) => {
++    expect(ActivityStatus.colorKey(elapsed)).toBe(expected)
++  })
++
++  it('keeps the phase clock stable across tokens and resets it at real transitions', () => {
++    observeActivity({ type: 'message.start' }, 'session', 1000)
++    observeActivity({ type: 'reasoning.delta', payload: { text: 'One' } }, 'session', 2000)
++    observeActivity({ type: 'reasoning.delta', payload: { text: 'Two' } }, 'session', 3000)
++    expect($activitySignal.get()).toEqual({ phase: 'reasoning', sessionId: 'session', since: 2000 })
++    observeActivity({ type: 'message.delta', payload: { text: 'Answer' } }, 'session', 4000)
++    expect($activitySignal.get().phase).toBe('answer')
++    expect($activitySignal.get().since).toBe(4000)
++    observeActivity({ type: 'tool.complete' }, 'session', 5000)
++    expect($activitySignal.get().phase).toBe('waiting')
++    observeActivity({ type: 'thinking.delta', payload: { text: 'synthesizing' } }, 'session', 6000)
++    expect($activitySignal.get().since).toBe(5000)
++  })
++
++  it('prioritizes user input, compaction and active tools without exposing command arguments', () => {
++    const tracker = new ActivityStatus()
++    const input = {
++      sessionId: 'session',
++      signal: { phase: 'answer' as const, sessionId: 'session', since: 1000 },
++      tools: [{ id: 'a', name: 'terminal', context: 'SECRET_ARGUMENT', startedAt: 1500 }],
++      compacting: false,
++      waiting: false
++    }
++    const tool = tracker.update(input, 2000)
++    expect(tool.label).toBe('Выполнение команды')
++    expect(tool.label).not.toContain('SECRET')
++    expect(tracker.update({ ...input, tools: [...input.tools, { id: 'b', name: 'read_file' }] }, 3000).label).toContain(
++      '+1'
++    )
++    expect(tracker.update(input, 4000).since).toBe(tool.since)
++    expect(tracker.update({ ...input, compacting: true }, 5000).label).toBe('Сжатие контекста')
++    const waiting = tracker.update({ ...input, compacting: true, waiting: true }, 6000)
++    expect(waiting.label).toBe('Требуется ответ')
++    expect(waiting.paused).toBe(true)
++  })
++
++  it('does not reuse another session state and resets time between requests', () => {
++    const tracker = new ActivityStatus()
++    const input = {
++      sessionId: 'new',
++      signal: { phase: 'answer' as const, sessionId: 'old', since: 1 },
++      tools: [],
++      compacting: false,
++      waiting: false
++    }
++    expect(tracker.update(input, 1000).label).toBe('Ожидание модели')
++    observeActivity({ type: 'message.start' }, 'new', 2000)
++    expect(tracker.update({ ...input, signal: $activitySignal.get() }, 2000).since).toBe(2000)
++    observeActivity({ type: 'message.start' }, 'new', 3000)
++    expect(tracker.update({ ...input, signal: $activitySignal.get() }, 3000).since).toBe(3000)
++  })
++
++  it('keeps pixel frames fixed-width, pauses for input and fits narrow status slots', () => {
++    const frames = Array.from({ length: 14 }, (_, tick) => ActivityStatus.frame(tick, false))
++    expect(new Set(frames).size).toBeGreaterThan(3)
++    expect(new Set(frames.map(stringWidth))).toEqual(new Set([10]))
++    expect(frames.every(frame => [...frame].filter(character => character === '█').length === 1)).toBe(true)
++    expect(frames[0]).toBe('[█░░░░░░░]')
++    expect(frames[7]).toBe('[░░░░░░░█]')
++    expect(ActivityStatus.frame(1, true)).toBe(ActivityStatus.frame(10, true))
++    for (const width of [8, 16, 28, 50]) {
++      const text = ActivityStatus.format(
++        { key: 'test', label: 'Получение рассуждений', paused: false, since: 0 },
++        4,
++        9000,
++        width
++      )
++      expect(stringWidth(text)).toBeLessThanOrEqual(width)
++      expect(text).not.toContain('\n')
++    }
++  })
++})
+diff --git a/ui-tui/src/__tests__/activityTicker.test.tsx b/ui-tui/src/__tests__/activityTicker.test.tsx
+new file mode 100644
+index 0000000000..b905c13e53
+--- /dev/null
++++ b/ui-tui/src/__tests__/activityTicker.test.tsx
+@@ -0,0 +1,175 @@
++import { PassThrough } from 'node:stream'
++
++import { renderSync } from '@hermes/ink'
++import { stripAnsi } from '@hermes/shared/ansi'
++import chalk from 'chalk'
++import React from 'react'
++import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
++
++import { $activitySignal, observeActivity } from '../app/activityStore.js'
++import type { IndicatorStyle } from '../app/interfaces.js'
++import { patchOverlayState, resetOverlayState } from '../app/overlayStore.js'
++import { patchTurnState, resetTurnState } from '../app/turnStore.js'
++import { patchUiState, resetUiState } from '../app/uiStore.js'
++import { StatusRule } from '../components/appChrome.js'
++import { DEFAULT_THEME } from '../theme.js'
++import { Parser } from '../../packages/hermes-ink/src/ink/termio.js'
++
++const cleanup: Array<() => void> = []
++const originalColorLevel = chalk.level
++
++beforeEach(() => {
++  chalk.level = 3
++  vi.useFakeTimers()
++  vi.setSystemTime(100_000)
++  resetUiState()
++  resetTurnState()
++  resetOverlayState()
++  patchUiState({ sid: 'test', busy: true })
++  $activitySignal.set({ phase: 'waiting', sessionId: 'test', since: 100_000 })
++})
++
++afterEach(() => {
++  chalk.level = originalColorLevel
++  cleanup.splice(0).forEach(dispose => dispose())
++  vi.useRealTimers()
++  vi.restoreAllMocks()
++})
++
++function mount(cols = 120, compacting = false) {
++  const stdout = Object.assign(new PassThrough(), { columns: cols, isTTY: false, rows: 20 })
++  const stdin = Object.assign(new PassThrough(), { isTTY: false })
++  const stderr = Object.assign(new PassThrough(), { isTTY: false })
++  let text = ''
++  stdout.on('data', chunk => {
++    text += chunk.toString()
++  })
++  const view = renderSync(
++    <StatusRule
++      bgCount={0}
++      busy
++      cols={cols}
++      compacting={compacting}
++      cwdLabel=""
++      liveSessionCount={0}
++      model="test-model"
++      status="running…"
++      statusColor={DEFAULT_THEME.color.muted}
++      t={DEFAULT_THEME}
++      indicatorStyle={'activity' as IndicatorStyle}
++      usage={{ context_max: 100000, context_used: 25000 }}
++    />,
++    {
++      patchConsole: false,
++      stdout: stdout as unknown as NodeJS.WriteStream,
++      stdin: stdin as unknown as NodeJS.ReadStream,
++      stderr: stderr as unknown as NodeJS.WriteStream
++    }
++  )
++  cleanup.push(() => {
++    view.unmount()
++    view.cleanup()
++  })
++  return Object.assign(() => stripAnsi(text), {
++    raw: () => text,
++    clear: () => {
++      text = ''
++    }
++  })
++}
++
++describe('activity status rendering', () => {
++  it('changes the rendered color at the thresholds and resets it for a new phase', async () => {
++    const output = mount()
++    for (const [elapsed, colorKey] of [
++      [10 * 60_000 - 1, 'statusGood'],
++      [10 * 60_000, 'statusWarn'],
++      [60 * 60_000 - 1, 'statusWarn'],
++      [60 * 60_000, 'statusCritical']
++    ] as const) {
++      output.clear()
++      vi.setSystemTime(100_000 + elapsed - 250)
++      await vi.advanceTimersByTimeAsync(250)
++      const actual = new Parser()
++        .feed(output.raw())
++        .filter(
++          action =>
++            action.type === 'text' &&
++            action.graphemes
++              .map(part => part.value)
++              .join('')
++              .includes('Ожидание модели')
++        )
++        .at(-1)
++      const expected = new Parser()
++        .feed(chalk.hex(DEFAULT_THEME.color[colorKey])('reference'))
++        .find(action => action.type === 'text')
++      expect(actual?.type === 'text' && actual.style.fg).toEqual(expected?.type === 'text' && expected.style.fg)
++    }
++    output.clear()
++    observeActivity({ type: 'reasoning.delta', payload: { text: 'New phase' } }, 'test')
++    await vi.advanceTimersByTimeAsync(250)
++    const actual = new Parser()
++      .feed(output.raw())
++      .filter(
++        action =>
++          action.type === 'text' &&
++          action.graphemes
++            .map(part => part.value)
++            .join('')
++            .includes('Получение рассуждений')
++      )
++      .at(-1)
++    const expected = new Parser()
++      .feed(chalk.hex(DEFAULT_THEME.color.statusGood)('reference'))
++      .find(action => action.type === 'text')
++    expect(actual?.type === 'text' && actual.style.fg).toEqual(expected?.type === 'text' && expected.style.fg)
++  })
++
++  it('renders a pixel bar and actual waiting phase instead of decorative verbs', () => {
++    const output = mount()
++    expect(output()).toContain('[█░░░░░░░]')
++    expect(output()).toContain('Ожидание модели')
++    expect(output()).toContain('0с')
++    expect(output()).toContain('test model')
++  })
++
++  it('renders active tools and prioritizes an open input prompt', () => {
++    patchTurnState({
++      tools: [
++        { id: 'read', name: 'read_file' },
++        { id: 'shell', name: 'terminal' }
++      ]
++    })
++    expect(mount()()).toContain('Чтение файла +1')
++    patchOverlayState({ sudo: { requestId: 'password' } })
++    const output = mount()
++    expect(output()).toContain('[────────]')
++    expect(output()).toContain('Требуется ответ')
++  })
++
++  it('shows compaction and avoids animation timers under a covering overlay', () => {
++    expect(mount(120, true)()).toContain('Сжатие контекста')
++    cleanup.splice(0).forEach(dispose => dispose())
++    patchOverlayState({ widget: { appId: 'cover', state: null } })
++    const timer = vi.spyOn(globalThis, 'setInterval')
++    mount()
++    expect(timer).not.toHaveBeenCalled()
++  })
++
++  it('updates the clock without resetting it on subsequent reasoning tokens', async () => {
++    observeActivity({ type: 'reasoning.delta', payload: { text: 'First' } }, 'test')
++    const output = mount()
++    await vi.advanceTimersByTimeAsync(2000)
++    observeActivity({ type: 'reasoning.delta', payload: { text: 'Next' } }, 'test')
++    await vi.advanceTimersByTimeAsync(1000)
++    expect(output()).toContain('Получение рассуждений')
++    expect(output()).toContain('3с')
++  })
++
++  it('preserves model and context on a narrow terminal', () => {
++    const output = mount(60)
++    expect(output()).toContain('test model')
++    expect(output()).toContain('25k')
++  })
++})
+diff --git a/ui-tui/src/__tests__/appCanvasBackground.test.tsx b/ui-tui/src/__tests__/appCanvasBackground.test.tsx
+new file mode 100644
+index 0000000000..6db44f783c
+--- /dev/null
++++ b/ui-tui/src/__tests__/appCanvasBackground.test.tsx
+@@ -0,0 +1,98 @@
++import { PassThrough } from 'node:stream'
++
++import { Box, renderSync, Text } from '@hermes/ink'
++import chalk from 'chalk'
++import React from 'react'
++import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
++
++import { renderToScreen } from '../../packages/hermes-ink/src/ink/render-to-screen.js'
++import { cellAtIndex } from '../../packages/hermes-ink/src/ink/screen.js'
++import type { AppLayoutProps } from '../app/interfaces.js'
++import { patchOverlayState, resetOverlayState } from '../app/overlayStore.js'
++import { patchUiState, resetUiState } from '../app/uiStore.js'
++import { AppLayout } from '../components/appLayout.js'
++import { fromSkin } from '../theme.js'
++
++vi.mock('../app/gatewayContext.js', () => ({ useGateway: () => ({ gw: null }) }))
++vi.mock('../components/agentsOverlay.js', () => ({
++  AgentsOverlay: () => (
++    <Box flexDirection="column">
++      <Text>plain</Text>
++      <Text backgroundColor="ansi256(22)">added</Text>
++    </Box>
++  )
++}))
++
++const colorLevel = chalk.level
++
++beforeEach(() => {
++  chalk.level = 2
++  patchOverlayState({ agents: true })
++})
++
++afterEach(() => {
++  chalk.level = colorLevel
++  resetOverlayState()
++  resetUiState()
++})
++
++const renderCanvas = (background?: string) => {
++  patchUiState({ theme: fromSkin(background ? { background } : {}, {}) })
++
++  return renderToScreen(<AppLayout {...({ mouseTracking: 'off' } as AppLayoutProps)} />, 20)
++}
++
++describe('AppLayout canvas background', () => {
++  it('paints blank viewport cells when the skin owns the background', () => {
++    const { screen, height } = renderCanvas('#121212')
++
++    expect(height).toBe(24)
++
++    for (const index of [0, 19, (height - 1) * 20, height * 20 - 1]) {
++      expect(cellAtIndex(screen, index).styleId & 1, `cell ${index} must have an opaque background`).toBe(1)
++    }
++  })
++
++  it.each([undefined, 'not-a-color'])(
++    'leaves the canvas transparent without a valid skin background: %s',
++    background => {
++      const { screen, height } = renderCanvas(background)
++
++      expect(cellAtIndex(screen, height * 20 - 1).styleId & 1).toBe(0)
++    }
++  )
++
++  it('preserves child highlights over the canvas background', () => {
++    const { screen } = renderCanvas('#121212')
++    const plain = cellAtIndex(screen, 0)
++    const highlighted = cellAtIndex(screen, 20)
++
++    expect(highlighted.styleId & 1).toBe(1)
++    expect(highlighted.styleId).not.toBe(plain.styleId)
++  })
++
++  it('emits explicit ANSI-256 backgrounds for both the canvas and child highlight', () => {
++    patchUiState({ theme: fromSkin({ background: '#121212' }, {}) })
++    const stdout = Object.assign(new PassThrough(), { columns: 20, isTTY: false, rows: 24 })
++    const stdin = Object.assign(new PassThrough(), { isTTY: false })
++    const stderr = Object.assign(new PassThrough(), { isTTY: false })
++    let output = ''
++    stdout.on('data', chunk => {
++      output += chunk.toString()
++    })
++
++    const view = renderSync(<AppLayout {...({ mouseTracking: 'off' } as AppLayoutProps)} />, {
++      patchConsole: false,
++      stderr: stderr as unknown as NodeJS.WriteStream,
++      stdin: stdin as unknown as NodeJS.ReadStream,
++      stdout: stdout as unknown as NodeJS.WriteStream
++    })
++
++    view.unmount()
++    view.cleanup()
++
++    expect(output).toContain('\x1b[48;5;233m')
++    expect(output).toContain('\x1b[48;5;22m')
++    expect(output).not.toContain('\x1b[48;2;')
++  })
++})
+diff --git a/ui-tui/src/__tests__/busyStatusColor.test.tsx b/ui-tui/src/__tests__/busyStatusColor.test.tsx
+new file mode 100644
+index 0000000000..72e020fee8
+--- /dev/null
++++ b/ui-tui/src/__tests__/busyStatusColor.test.tsx
+@@ -0,0 +1,112 @@
++import { PassThrough } from 'node:stream'
++
++import { renderSync } from '@hermes/ink'
++import chalk from 'chalk'
++import React from 'react'
++import { afterEach, beforeEach, describe, expect, it } from 'vitest'
++
++import { Parser } from '../../packages/hermes-ink/src/ink/termio.js'
++import { StatusRule } from '../components/appChrome.js'
++import { messages } from '../i18n/runtime.js'
++import { fromSkin } from '../theme.js'
++
++const colorLevel = chalk.level
++
++beforeEach(() => {
++  chalk.level = 3
++})
++
++afterEach(() => {
++  chalk.level = colorLevel
++})
++
++class StatusFixture {
++  readonly theme = fromSkin({ background: '#1c1c1c', status_bar_good: '#63D0A6', banner_dim: '#545E6B' }, {})
++
++  render(overrides: Partial<React.ComponentProps<typeof StatusRule>> = {}) {
++    const stdout = Object.assign(new PassThrough(), { columns: 200, isTTY: false, rows: 24 })
++    const stdin = Object.assign(new PassThrough(), { isTTY: false })
++    const stderr = Object.assign(new PassThrough(), { isTTY: false })
++    let output = ''
++    stdout.on('data', chunk => {
++      output += chunk.toString()
++    })
++
++    const view = renderSync(
++      <StatusRule
++        bgCount={0}
++        busy
++        cols={200}
++        compacting
++        cwdLabel=""
++        liveSessionCount={0}
++        model="test-model"
++        status="running…"
++        statusColor={this.theme.color.muted}
++        t={this.theme}
++        usage={{ context_max: 100_000, context_used: 25_000, context_percent: 25, total: 25_000 }}
++        {...overrides}
++      />,
++      {
++        patchConsole: false,
++        stderr: stderr as unknown as NodeJS.WriteStream,
++        stdin: stdin as unknown as NodeJS.ReadStream,
++        stdout: stdout as unknown as NodeJS.WriteStream
++      }
++    )
++
++    view.unmount()
++    view.cleanup()
++
++    return new Parser()
++      .feed(output)
++      .filter(action => action.type === 'text')
++      .map(action => ({ text: action.graphemes.map(grapheme => grapheme.value).join(''), style: action.style }))
++  }
++}
++
++describe('busy status visibility', () => {
++  it.each([25, 75, 99])('uses the healthy context-bar green while busy at context percent %s', contextPercent => {
++    const fixture = new StatusFixture()
++    const reference = fixture.render().find(span => span.text.includes('25%'))
++
++    const working = fixture
++      .render({ usage: { context_max: 100_000, context_used: 25_000, context_percent: contextPercent } })
++      .find(span => span.text.includes(messages().status.compacting))
++
++    expect(reference).toBeDefined()
++    expect(working).toBeDefined()
++    expect(working?.style.fg).toEqual(reference?.style.fg)
++    expect(working?.style.dim).toBe(false)
++  })
++
++  it('uses the same green for ordinary animated activity messages', () => {
++    const fixture = new StatusFixture()
++    const reference = fixture.render().find(span => span.text.includes('25%'))
++    const working = fixture.render({ compacting: false }).find(span => span.text.includes('…'))
++
++    expect(working).toBeDefined()
++    expect(working?.style.fg).toEqual(reference?.style.fg)
++    expect(working?.style.dim).toBe(false)
++  })
++
++  it.each(['ready', 'interrupted', 'error: failed'])('preserves the supplied idle color for %s', status => {
++    const fixture = new StatusFixture()
++
++    const color =
++      status === 'ready'
++        ? fixture.theme.color.ok
++        : status === 'interrupted'
++          ? fixture.theme.color.warn
++          : fixture.theme.color.error
++
++    const expected = new Parser().feed(chalk.hex(color)('idle')).find(action => action.type === 'text')
++
++    const idle = fixture
++      .render({ busy: false, compacting: false, status, statusColor: color })
++      .find(span => span.text.includes(status))
++
++    expect(idle).toBeDefined()
++    expect(idle?.style.fg).toEqual(expected?.type === 'text' ? expected.style.fg : undefined)
++  })
++})
+diff --git a/ui-tui/src/__tests__/clarifyAppearance.test.tsx b/ui-tui/src/__tests__/clarifyAppearance.test.tsx
+new file mode 100644
+index 0000000000..d4d421b375
+--- /dev/null
++++ b/ui-tui/src/__tests__/clarifyAppearance.test.tsx
+@@ -0,0 +1,144 @@
++import { PassThrough } from 'node:stream'
++
++import { renderSync } from '@hermes/ink'
++import { contrastRatio } from '@hermes/shared/color'
++import chalk from 'chalk'
++import React from 'react'
++import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
++
++import { Parser } from '../../packages/hermes-ink/src/ink/termio.js'
++import { ApprovalPrompt, ClarifyPrompt } from '../components/prompts.js'
++import { fromSkin, type Theme } from '../theme.js'
++import type { ClarifyReq } from '../types.js'
++
++const colorLevel = chalk.level
++
++beforeEach(() => {
++  chalk.level = 2
++})
++
++afterEach(() => {
++  chalk.level = colorLevel
++})
++
++class ChoicePromptFixture {
++  readonly colors = {
++    background: '#1c1c1c',
++    ui_accent: '#87AF87',
++    completion_menu_bg: '#151C2F',
++    completion_menu_current_bg: '#324867',
++    clarify_bg: '#262626',
++    clarify_text: '#ffffff',
++    clarify_selected_bg: '#005F00'
++  }
++
++  readonly request: ClarifyReq = {
++    requestId: 'choice-style-fixture',
++    questions: [{ qid: 'appearance', question: 'Choose an option', choices: ['First option', 'Second option'] }]
++  }
++
++  render(theme = fromSkin(this.colors, {}), request = this.request): string {
++    return this.renderElement(
++      <ClarifyPrompt cols={80} onCancel={vi.fn()} onQuestionAnswer={vi.fn()} req={request} t={theme} />
++    )
++  }
++
++  renderElement(element: React.ReactElement): string {
++    const stdout = Object.assign(new PassThrough(), { columns: 80, isTTY: false, rows: 24 })
++
++    const stdin = Object.assign(new PassThrough(), {
++      isTTY: true,
++      isRaw: false,
++      ref: vi.fn(),
++      unref: vi.fn(),
++      setRawMode: vi.fn()
++    })
++
++    const stderr = Object.assign(new PassThrough(), { isTTY: false })
++    let output = ''
++    stdout.on('data', chunk => {
++      output += chunk.toString()
++    })
++
++    const view = renderSync(element, {
++      patchConsole: false,
++      stderr: stderr as unknown as NodeJS.WriteStream,
++      stdin: stdin as unknown as NodeJS.ReadStream,
++      stdout: stdout as unknown as NodeJS.WriteStream
++    })
++
++    view.unmount()
++    view.cleanup()
++
++    return output
++  }
++}
++
++describe('ClarifyPrompt palette', () => {
++  it('paints the card gray with white text and a green selected row in ANSI-256', () => {
++    const output = new ChoicePromptFixture().render()
++
++    expect(output).toContain('\x1b[48;5;235m')
++    expect(output).toContain('\x1b[38;5;231m')
++    expect(output).toContain('\x1b[48;5;28m')
++    expect(contrastRatio('#ffffff', '#262626')).toBeGreaterThan(4.5)
++    expect(contrastRatio('#ffffff', '#005F00')).toBeGreaterThan(4.5)
++    expect(contrastRatio('#ffffff', '#008700')).toBeGreaterThan(4.5)
++  })
++
++  it('keeps questions, unselected choices, and hints white without dimming', () => {
++    const output = new ChoicePromptFixture().render()
++    const spans = new Parser().feed(output).filter(action => action.type === 'text')
++
++    for (const label of ['Choose an option', 'Second option', 'answered']) {
++      const span = spans.find(action =>
++        action.graphemes
++          .map(grapheme => grapheme.value)
++          .join('')
++          .includes(label)
++      )
++
++      expect(span?.style.fg, label).toEqual({ type: 'indexed', index: 231 })
++      expect(span?.style.dim, label).toBe(false)
++    }
++  })
++
++  it('does not change the shared palette or approval prompts', () => {
++    const fixture = new ChoicePromptFixture()
++    const theme = fromSkin(fixture.colors, {})
++    const original = JSON.stringify(theme)
++    const generic: Theme = { ...theme, clarify: undefined }
++    const req = { requestId: 'approval-fixture', command: 'printf hello', description: 'Test command' }
++
++    fixture.render(theme)
++    expect(JSON.stringify(theme)).toBe(original)
++    expect(theme.background).toBe('#1c1c1c')
++    expect(theme.color.completionCurrentBg).toBe('#324867')
++    expect(fixture.renderElement(<ApprovalPrompt onChoice={vi.fn()} req={req} t={theme} />)).toBe(
++      fixture.renderElement(<ApprovalPrompt onChoice={vi.fn()} req={req} t={generic} />)
++    )
++  })
++
++  it('preserves the original appearance when scoped colors are absent', () => {
++    const fixture = new ChoicePromptFixture()
++    const theme = fromSkin({ background: '#1c1c1c' }, {})
++
++    expect(fixture.render(theme)).not.toContain('\x1b[48;5;235m')
++  })
++
++  it.each([true, false])('keeps multi-select and free-text questions readable (multi-select=%s)', multiSelect => {
++    const fixture = new ChoicePromptFixture()
++
++    const req: ClarifyReq = {
++      requestId: 'alternate-question-fixture',
++      questions: [
++        { qid: 'q1', question: 'Choose an option', choices: multiSelect ? ['First', 'Second'] : null, multiSelect }
++      ]
++    }
++
++    const output = fixture.render(fromSkin(fixture.colors, {}), req)
++
++    expect(output).toContain('\x1b[48;5;235m')
++    expect(output).toContain('\x1b[38;5;231m')
++  })
++})
+diff --git a/ui-tui/src/__tests__/clipboardFeedback.test.ts b/ui-tui/src/__tests__/clipboardFeedback.test.ts
+new file mode 100644
+index 0000000000..970370e053
+--- /dev/null
++++ b/ui-tui/src/__tests__/clipboardFeedback.test.ts
+@@ -0,0 +1,97 @@
++import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
++import { createSelectionState } from '../../packages/hermes-ink/src/ink/selection.js'
++
++import { ClipboardFeedback } from '../app/clipboardFeedback.js'
++
++beforeEach(() => { vi.useFakeTimers() })
++afterEach(() => { vi.clearAllTimers(); vi.useRealTimers() })
++
++describe('copy-on-release feedback', () => {
++  it('copies only when dragging finishes, not on drag moves or later selection notifications', async () => {
++    const write = vi.fn(async () => true)
++    const feedback = new ClipboardFeedback(write)
++    let dragging = false
++    let notify!: () => void
++    const unsubscribe = vi.fn()
++    const selection = {
++      getState: () => ({ ...createSelectionState(), isDragging: dragging }),
++      getTextSelectionText: () => 'selected',
++      subscribe: (callback: () => void) => { notify = callback; return unsubscribe }
++    }
++    const stop = feedback.watchSelection(selection)
++    notify()
++    dragging = true
++    notify()
++    notify()
++    expect(write).not.toHaveBeenCalled()
++    dragging = false
++    notify()
++    await vi.waitFor(() => expect(write).toHaveBeenCalledExactlyOnceWith('selected'))
++    notify()
++    await Promise.resolve()
++    expect(write).toHaveBeenCalledTimes(1)
++    stop()
++    expect(unsubscribe).toHaveBeenCalledOnce()
++  })
++
++  it('waits for the clipboard write and displays success for two seconds', async () => {
++    let complete!: (result: boolean) => void
++    const write = vi.fn(() => new Promise<boolean>(resolve => { complete = resolve }))
++    const feedback = new ClipboardFeedback(write)
++    const pending = feedback.copyText('selected text')
++    await Promise.resolve()
++    expect(write).toHaveBeenCalledWith('selected text')
++    expect(feedback.visible.get()).toBe(false)
++    complete(true)
++    expect(await pending).toBe(true)
++    expect(feedback.visible.get()).toBe(true)
++    vi.advanceTimersByTime(1999)
++    expect(feedback.visible.get()).toBe(true)
++    vi.advanceTimersByTime(1)
++    expect(feedback.visible.get()).toBe(false)
++  })
++
++  it('does not overwrite the clipboard for an empty selection or announce failed writes', async () => {
++    const write = vi.fn(async () => false)
++    const feedback = new ClipboardFeedback(write)
++    expect(await feedback.copyText('')).toBe(false)
++    expect(write).not.toHaveBeenCalled()
++    expect(await feedback.copyText('selected')).toBe(false)
++    expect(feedback.visible.get()).toBe(false)
++  })
++
++  it('restarts the notice duration on another successful selection', async () => {
++    const feedback = new ClipboardFeedback(async () => true)
++    await feedback.copyText('first')
++    vi.advanceTimersByTime(1500)
++    await feedback.copyText('second')
++    vi.advanceTimersByTime(1500)
++    expect(feedback.visible.get()).toBe(true)
++    vi.advanceTimersByTime(500)
++    expect(feedback.visible.get()).toBe(false)
++  })
++
++  it('recovers after a rejected clipboard write without a false success notice', async () => {
++    const write = vi.fn().mockRejectedValueOnce(new Error('Clipboard unavailable')).mockResolvedValueOnce(true)
++    const feedback = new ClipboardFeedback(write)
++    expect(await feedback.copyText('failed')).toBe(false)
++    expect(feedback.visible.get()).toBe(false)
++    expect(await feedback.copyText('next')).toBe(true)
++    expect(feedback.visible.get()).toBe(true)
++  })
++
++  it('serializes writes so the latest selection is not overwritten by an older copy', async () => {
++    let finishFirst!: (result: boolean) => void
++    const write = vi.fn()
++      .mockImplementationOnce(() => new Promise<boolean>(resolve => { finishFirst = resolve }))
++      .mockResolvedValueOnce(true)
++    const feedback = new ClipboardFeedback(write)
++    const first = feedback.copyText('first')
++    const second = feedback.copyText('second')
++    await Promise.resolve()
++    expect(write).toHaveBeenCalledTimes(1)
++    finishFirst(true)
++    await Promise.all([first, second])
++    expect(write.mock.calls.map(call => call[0])).toEqual(['first', 'second'])
++  })
++})
+diff --git a/ui-tui/src/__tests__/copyOnMouseRelease.test.tsx b/ui-tui/src/__tests__/copyOnMouseRelease.test.tsx
+new file mode 100644
+index 0000000000..55143ea6c1
+--- /dev/null
++++ b/ui-tui/src/__tests__/copyOnMouseRelease.test.tsx
+@@ -0,0 +1,62 @@
++import { PassThrough } from 'node:stream'
++
++import { renderSync } from '@hermes/ink'
++import React from 'react'
++import { afterEach, describe, expect, it, vi } from 'vitest'
++
++import { clipboardFeedback } from '../app/clipboardFeedback.js'
++import { TextInput, type TextInputMouseApi } from '../components/textInput.js'
++import { writeClipboardText } from '../lib/clipboard.js'
++import { isMac } from '../lib/platform.js'
++
++vi.mock('../lib/clipboard.js', () => ({
++  writeClipboardText: vi.fn(async () => true),
++  readClipboardText: vi.fn(async () => null)
++}))
++
++afterEach(() => { clipboardFeedback.visible.set(false); vi.clearAllMocks() })
++
++class MouseCopyFixture {
++  readonly mouse: { current: TextInputMouseApi | null } = { current: null }
++  readonly changed = vi.fn()
++
++  mount() {
++    const stdin = Object.assign(new PassThrough(), {
++      isTTY: true, isRaw: false, ref: vi.fn(), unref: vi.fn(), setRawMode: vi.fn()
++    })
++    return renderSync(<TextInput columns={40} mouseApiRef={this.mouse} onChange={this.changed} onSubmit={vi.fn()} value="selected text" />, {
++      patchConsole: false,
++      stdin: stdin as unknown as NodeJS.ReadStream,
++      stdout: Object.assign(new PassThrough(), { columns: 40, rows: 8, isTTY: false }) as unknown as NodeJS.WriteStream,
++      stderr: new PassThrough() as unknown as NodeJS.WriteStream
++    })
++  }
++}
++
++describe.skipIf(!isMac)('composer copy on mouse release', () => {
++  it('copies exactly the selected text on release, keeps the draft and announces success', async () => {
++    const fixture = new MouseCopyFixture()
++    const view = fixture.mount()
++    try {
++      fixture.mouse.current!.startAtBeginning()
++      fixture.mouse.current!.dragAt(0, 8)
++      expect(writeClipboardText).not.toHaveBeenCalled()
++      fixture.mouse.current!.end()
++      await vi.waitFor(() => expect(clipboardFeedback.visible.get()).toBe(true))
++      expect(writeClipboardText).toHaveBeenCalledExactlyOnceWith('selected')
++      expect(fixture.changed).not.toHaveBeenCalled()
++    } finally { view.unmount(); view.cleanup() }
++  })
++
++  it('does not copy on a click without selection', async () => {
++    const fixture = new MouseCopyFixture()
++    const view = fixture.mount()
++    try {
++      fixture.mouse.current!.startAtBeginning()
++      fixture.mouse.current!.end()
++      await Promise.resolve()
++      expect(writeClipboardText).not.toHaveBeenCalled()
++      expect(clipboardFeedback.visible.get()).toBe(false)
++    } finally { view.unmount(); view.cleanup() }
++  })
++})
+diff --git a/ui-tui/src/__tests__/messageSpacing.test.tsx b/ui-tui/src/__tests__/messageSpacing.test.tsx
+new file mode 100644
+index 0000000000..3a3f6a7334
+--- /dev/null
++++ b/ui-tui/src/__tests__/messageSpacing.test.tsx
+@@ -0,0 +1,113 @@
++import { Box } from '@hermes/ink'
++import React from 'react'
++import { describe, expect, it } from 'vitest'
++
++import { renderToScreen } from '../../packages/hermes-ink/src/ink/render-to-screen.js'
++import { cellAtIndex } from '../../packages/hermes-ink/src/ink/screen.js'
++import { MessageLine } from '../components/messageLine.js'
++import { buildToolTrailLine } from '../lib/text.js'
++import { DEFAULT_THEME } from '../theme.js'
++import type { DetailsMode, Msg } from '../types.js'
++
++class TranscriptFixture {
++  readonly messages: Msg[] = [
++    { role: 'assistant', text: 'Updating the background.' },
++    {
++      kind: 'trail',
++      role: 'system',
++      text: '',
++      tools: [
++        buildToolTrailLine('skill_view', 'hermes-agent'),
++        buildToolTrailLine('read_file', 'dsfox-skin.yaml'),
++        buildToolTrailLine('terminal', 'hermes config get display.skin')
++      ]
++    },
++    { role: 'assistant', text: 'Ready.', tools: [buildToolTrailLine('patch', '')] }
++  ]
++
++  render(compact: boolean, streaming = false, tools: DetailsMode = 'expanded'): string[] {
++    const columns = 120
++
++    const { screen, height } = renderToScreen(
++      <Box flexDirection="column">
++        {this.messages.map((msg, index) => (
++          <MessageLine
++            cols={120}
++            compact={compact}
++            isStreaming={streaming && index === this.messages.length - 1}
++            key={index}
++            msg={msg}
++            prev={this.messages[index - 1]}
++            sections={{ thinking: 'hidden', tools }}
++            t={DEFAULT_THEME}
++          />
++        ))}
++      </Box>,
++      columns
++    )
++
++    return Array.from({ length: height }, (_, row) =>
++      Array.from({ length: columns }, (_, column) => cellAtIndex(screen, row * columns + column).char)
++        .join('')
++        .trimEnd()
++    )
++  }
++}
++
++describe('compact transcript spacing', () => {
++  it('renders consecutive background event rows without blank lines', () => {
++    const fixture = new TranscriptFixture()
++    fixture.messages.splice(
++      0,
++      fixture.messages.length,
++      { role: 'system', kind: 'event', text: 'Background Process Failed (exit 1): test' },
++      { role: 'system', kind: 'event', text: 'Background Process Finished: test' }
++    )
++    const compact = fixture.render(true)
++    expect(compact).toHaveLength(2)
++    expect(compact.every(line => line.trim().length > 0)).toBe(true)
++    expect(fixture.render(false).filter(line => !line.trim())).toHaveLength(2)
++  })
++
++  it.each([false, true])('removes blank service rows around tool groups and responses (streaming=%s)', streaming => {
++    const lines = new TranscriptFixture().render(true, streaming)
++
++    expect(lines).not.toContain('')
++    expect(lines.join('\n')).toContain('Tool calls (3)')
++    expect(lines.join('\n')).toContain('Tool calls (1)')
++    expect(lines.join('\n')).toContain('Response')
++    expect(lines.join('\n')).toContain('Ready.')
++  })
++
++  it('retains all visible content while removing four service spacer rows', () => {
++    const fixture = new TranscriptFixture()
++    const spacious = fixture.render(false)
++    const compact = fixture.render(true)
++
++    expect(spacious.filter(line => !line.trim())).toHaveLength(4)
++    expect(compact).toEqual(spacious.filter(line => line.trim()))
++  })
++
++  it('does not leave spacer rows when tool sections are hidden', () => {
++    const lines = new TranscriptFixture().render(true, false, 'hidden')
++
++    expect(lines).toHaveLength(2)
++    expect(lines).not.toContain('')
++  })
++
++  it('keeps the existing separation around user messages', () => {
++    const fixture = new TranscriptFixture()
++    fixture.messages.unshift({ role: 'user', text: 'User prompt' })
++    const lines = fixture.render(true)
++    const promptRow = lines.findIndex(line => line.includes('User prompt'))
++
++    expect(promptRow).toBe(1)
++    expect(lines[promptRow + 1]).toBe('')
++  })
++
++  it('leaves code block layout unchanged', () => {
++    const fixture = new TranscriptFixture()
++    fixture.messages.splice(0, fixture.messages.length, { role: 'assistant', text: '```text\nfirst\n\nsecond\n```' })
++    expect(fixture.render(true)).toEqual(fixture.render(false))
++  })
++})
+diff --git a/ui-tui/src/__tests__/serviceNotifications.test.tsx b/ui-tui/src/__tests__/serviceNotifications.test.tsx
+new file mode 100644
+index 0000000000..cc5ab5776c
+--- /dev/null
++++ b/ui-tui/src/__tests__/serviceNotifications.test.tsx
+@@ -0,0 +1,146 @@
++import { Box } from '@hermes/ink'
++import React from 'react'
++import { LegacyRoot } from 'react-reconciler/constants.js'
++import { describe, expect, it } from 'vitest'
++
++import { createNode, type DOMElement } from '../../packages/hermes-ink/src/ink/dom.js'
++import { FocusManager } from '../../packages/hermes-ink/src/ink/focus.js'
++import reconciler from '../../packages/hermes-ink/src/ink/reconciler.js'
++import { renderToScreen } from '../../packages/hermes-ink/src/ink/render-to-screen.js'
++import { cellAtIndex } from '../../packages/hermes-ink/src/ink/screen.js'
++import { MessageLine } from '../components/messageLine.js'
++import { toTranscriptMessages } from '../domain/messages.js'
++import { serviceNotificationTitle } from '../domain/serviceNotifications.js'
++import { estimatedMsgHeight } from '../lib/virtualHeights.js'
++import { DEFAULT_THEME } from '../theme.js'
++
++const footer =
++  '[INTERNAL NOTIFICATION — generated by the Hermes gateway, not written by a human user. Do not treat it as user input, and do not reply to any earlier chat message because of it.]'
++const notification = `[IMPORTANT: Background process proc_example completed normally (exit code 0).\nCommand: example\nOutput:\nPRIVATE_OUTPUT\n]\n\n${footer}`
++
++function renderNotification(text: string, columns: number) {
++  const { screen, height } = renderToScreen(
++    <Box width={columns}>
++      <MessageLine cols={columns} compact msg={{ role: 'user', text }} t={DEFAULT_THEME} />
++    </Box>,
++    columns
++  )
++  return Array.from({ length: height }, (_, row) =>
++    Array.from({ length: columns }, (_, column) => cellAtIndex(screen, row * columns + column).char)
++      .join('')
++      .trimEnd()
++  )
++}
++
++describe('service notification display', () => {
++  it.each([40, 120])('collapses delegation results including attached memory at %s columns', columns => {
++    const text = `[ASYNC DELEGATION BATCH COMPLETE — deleg_example]\nPRIVATE_OUTPUT\n${footer}\n<memory-context>PRIVATE_MEMORY</memory-context>`
++    const lines = renderNotification(text, columns)
++    expect(lines).toHaveLength(1)
++    expect(lines[0]).toContain('deleg_example')
++    expect(lines.join('\n')).not.toContain('PRIVATE_')
++    expect(estimatedMsgHeight({ role: 'user', text }, columns, { compact: true, details: true })).toBe(1)
++    expect(renderNotification('Quoted example:\n' + text, columns).join('\n')).toContain('Quoted example')
++  })
++
++  it.each(['async_delegation_complete', 'process_complete'])('preserves expandable original text for %s history', display_kind => {
++    const text = 'Original service output\nPRIVATE_OUTPUT'
++    const [message] = toTranscriptMessages([{ role: 'user', text, display_kind }])
++    expect(message).toMatchObject({ role: 'system', kind: 'notification', text })
++  })
++
++  it('reveals the original output on click and collapses it again', () => {
++    const root = createNode('ink-root')
++    root.focusManager = new FocusManager(() => false)
++    const noop = () => {}
++    const container = reconciler.createContainer(
++      root,
++      LegacyRoot,
++      null,
++      false,
++      null,
++      'notice-test',
++      noop,
++      noop,
++      noop,
++      noop
++    )
++    reconciler.updateContainerSync(
++      <MessageLine cols={120} compact msg={{ role: 'user', text: notification }} t={DEFAULT_THEME} />,
++      container,
++      null,
++      noop
++    )
++    reconciler.flushSyncWork()
++    const nodes = (node: DOMElement): DOMElement[] => [
++      node,
++      ...node.childNodes.flatMap(child => (child.nodeName === '#text' ? [] : nodes(child)))
++    ]
++    const height = () => {
++      root.yogaNode!.setWidth(120)
++      root.yogaNode!.calculateLayout(120)
++      return root.yogaNode!.getComputedHeight()
++    }
++    try {
++      expect(height()).toBe(1)
++      const button = nodes(root).find(node => typeof node._eventHandlers?.onClick === 'function')!
++      expect(button).toBeDefined()
++      reconciler.discreteUpdates(button._eventHandlers!.onClick as () => void)
++      reconciler.flushSyncWork()
++      expect(height()).toBeGreaterThan(1)
++      const text = nodes(root)
++        .flatMap(node => node.childNodes.map(child => (child.nodeName === '#text' ? child.nodeValue : '')))
++        .join('')
++      expect(text).toContain('PRIVATE_OUTPUT')
++      reconciler.discreteUpdates(button._eventHandlers!.onClick as () => void)
++      reconciler.flushSyncWork()
++
++      expect(height()).toBe(1)
++    } finally {
++      reconciler.updateContainerSync(null, container, null, noop)
++      reconciler.flushSyncWork()
++    }
++  })
++
++  it('keeps heartbeat summaries and virtual height compact', () => {
++    const text = `[Background process proc_example heartbeat #3 — still running after 1m]\n${footer}`
++    const message = { role: 'user' as const, text }
++    expect(serviceNotificationTitle(message)).toContain(
++      '\u0432\u044b\u043f\u043e\u043b\u043d\u044f\u0435\u0442\u0441\u044f'
++    )
++    expect(estimatedMsgHeight(message, 40, { compact: true, details: true })).toBe(1)
++  })
++
++  it.each([40, 120])('collapses a live machine notification to one row at %s columns', columns => {
++    const lines = renderNotification(notification, columns)
++    expect(lines).toHaveLength(1)
++    expect(lines[0]).toContain('▸')
++    expect(lines.join('\n')).not.toContain('PRIVATE_OUTPUT')
++    expect(lines.join('\n')).not.toContain('INTERNAL NOTIFICATION')
++  })
++
++  it('retains the full original notification when restoring history', () => {
++    const [message] = toTranscriptMessages([
++      { role: 'user', text: notification, display_kind: 'internal_notification' }
++    ])
++    expect(message).toMatchObject({ role: 'system', kind: 'notification', text: notification })
++  })
++
++  it('does not reclassify ordinary user text or quoted examples', () => {
++    const text = 'Please explain this:\n' + notification
++    expect(toTranscriptMessages([{ role: 'user', text }])[0]).toMatchObject({ role: 'user', text })
++    expect(renderNotification('Ordinary user message', 120).join('\n')).toContain('Ordinary user message')
++  })
++
++  it('shows a failure in the collapsed row rather than hiding it as success', () => {
++    const failed = notification.replace('completed normally (exit code 0)', 'exited with exit code 2')
++    expect(renderNotification(failed, 120)[0]).toContain('2')
++    expect(renderNotification(failed, 120).join('\n')).not.toContain('PRIVATE_OUTPUT')
++  })
++
++  it('keeps the failure code visible when a process completion is restored', () => {
++    const text = notification.replace('completed normally (exit code 0)', 'exited with exit code 2')
++    const [message] = toTranscriptMessages([{ role: 'user', text, display_kind: 'process_complete' }])
++    expect(serviceNotificationTitle(message!)).toContain('2')
++  })
++})
+diff --git a/ui-tui/src/__tests__/userInputBackground.test.tsx b/ui-tui/src/__tests__/userInputBackground.test.tsx
+new file mode 100644
+index 0000000000..af7eb78794
+--- /dev/null
++++ b/ui-tui/src/__tests__/userInputBackground.test.tsx
+@@ -0,0 +1,121 @@
++import { PassThrough } from 'node:stream'
++
++import { Box, renderSync } from '@hermes/ink'
++import chalk from 'chalk'
++import React from 'react'
++import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
++
++import { Parser } from '../../packages/hermes-ink/src/ink/termio.js'
++import type { AppLayoutProps } from '../app/interfaces.js'
++import { resetOverlayState } from '../app/overlayStore.js'
++import { patchUiState, resetUiState } from '../app/uiStore.js'
++import { AppLayout } from '../components/appLayout.js'
++import { MessageLine } from '../components/messageLine.js'
++import { fromSkin } from '../theme.js'
++import type { Msg } from '../types.js'
++
++const colorLevel = chalk.level
++vi.mock('../app/gatewayContext.js', () => ({ useGateway: () => ({ gw: null }) }))
++beforeEach(() => { chalk.level = 2 })
++afterEach(() => { chalk.level = colorLevel; resetOverlayState(); resetUiState() })
++
++class BackgroundFixture {
++  readonly colors = { background: '#1c1c1c', user_message_bg: '#000000', input_bg: '#000000' }
++
++  render(element: React.ReactElement, columns = 40): string {
++    const stdout = Object.assign(new PassThrough(), { columns, isTTY: false, rows: 24 })
++    const stdin = Object.assign(new PassThrough(), {
++      isTTY: true, isRaw: false, ref: vi.fn(), unref: vi.fn(), setRawMode: vi.fn()
++    })
++    const stderr = Object.assign(new PassThrough(), { isTTY: false })
++    let output = ''
++    stdout.on('data', chunk => { output += chunk.toString() })
++    const view = renderSync(element, {
++      patchConsole: false,
++      stdout: stdout as unknown as NodeJS.WriteStream,
++      stdin: stdin as unknown as NodeJS.ReadStream,
++      stderr: stderr as unknown as NodeJS.WriteStream
++    })
++    view.unmount()
++    view.cleanup()
++    return output
++  }
++
++  message(message: Msg, colors = this.colors, columns = 40): string {
++    const theme = fromSkin(colors, {})
++    return this.render(
++      <Box backgroundColor={theme.background} flexDirection="column" width={columns}>
++        <MessageLine cols={columns} compact msg={message} t={theme} />
++      </Box>, columns
++    )
++  }
++
++  spans(output: string) {
++    return new Parser().feed(output).filter(action => action.type === 'text')
++  }
++
++  composer(input: string, inputBuf: string[] = [], columns = 40): string {
++    patchUiState({ theme: fromSkin(this.colors, {}), sid: 'background-fixture', statusBar: 'top' })
++    const props = {
++      actions: { setStickyPrompt: vi.fn() }, mouseTracking: 'off', progress: { showProgressArea: false },
++      composer: {
++        cols: columns, input, inputBuf, compIdx: 0, completions: [], empty: !input,
++        queuedDisplay: [], queueEditIdx: null, pagerPageSize: 10,
++        handleTextPaste: vi.fn(), submit: vi.fn(), updateInput: vi.fn(), voiceRecordKey: null
++      },
++      status: {
++        cwdLabel: '', goodVibesTick: 0, lastTurnEndedAt: null, sessionStartedAt: null,
++        sessionTitle: '', showStickyPrompt: false, statusColor: '#ffffff', stickyPrompt: '',
++        turnStartedAt: null, voiceLabel: ''
++      },
++      transcript: {
++        historyItems: [], scrollRef: { current: null }, virtualRows: [],
++        virtualHistory: { start: 0, end: 0, topSpacer: 0, bottomSpacer: 0, offsets: [] }
++      }
++    } as unknown as AppLayoutProps
++    return this.render(<AppLayout {...props} />, columns)
++  }
++}
++
++describe('skin-controlled user input backgrounds', () => {
++  it.each([40, 120])('paints the live composer and buffered lines black at width %s', columns => {
++    const fixture = new BackgroundFixture()
++    const output = fixture.composer('DRAFTVALUE', ['BUFFERED'], columns)
++    const spans = fixture.spans(output)
++    for (const label of ['DRAFTVALUE', 'BUFFERED']) {
++      const span = spans.find(value => value.graphemes.map(grapheme => grapheme.value).join('').includes(label))
++      expect(span?.style.bg, label).toEqual({ type: 'indexed', index: 16 })
++    }
++    expect(output).not.toContain('\x1b[48;2;')
++  })
++
++  it('keeps the empty composer black', () => {
++    const fixture = new BackgroundFixture()
++    const spans = fixture.spans(fixture.composer(''))
++    const prompt = spans.find(value => value.graphemes.some(grapheme => grapheme.value === '\u276f'))
++    expect(prompt?.style.bg).toEqual({ type: 'indexed', index: 16 })
++  })
++
++  it.each([40, 120])('paints user text and the row fill black in ANSI-256 at width %s', columns => {
++    const fixture = new BackgroundFixture()
++    const output = fixture.message({ role: 'user', text: 'USERFIRST\nUSERSECOND' }, fixture.colors, columns)
++    const spans = fixture.spans(output)
++    for (const label of ['USERFIRST', 'USERSECOND']) {
++      const span = spans.find(value => value.graphemes.map(grapheme => grapheme.value).join('').includes(label))
++      expect(span?.style.bg, label).toEqual({ type: 'indexed', index: 16 })
++    }
++    expect(spans.some(span => span.style.bg.type === 'indexed' && span.style.bg.index === 16 &&
++      span.graphemes.length > 10 && span.graphemes.every(grapheme => grapheme.value === ' '))).toBe(true)
++    expect(output).not.toContain('\x1b[48;2;')
++  })
++
++  it.each<Msg>([
++    { role: 'assistant', text: 'Assistant response' },
++    { role: 'system', text: 'System notice' },
++    { role: 'user', kind: 'notification', text: 'Service notice' }
++  ])('leaves other message kinds unchanged: $role/$kind', message => {
++    const fixture = new BackgroundFixture()
++    const original = { ...fixture.colors, user_message_bg: '', input_bg: '' }
++    expect(fixture.message(message)).toBe(fixture.message(message, original))
++  })
++})
+diff --git a/ui-tui/src/app/activityStore.ts b/ui-tui/src/app/activityStore.ts
+new file mode 100644
+index 0000000000..bc5d6c68dd
+--- /dev/null
++++ b/ui-tui/src/app/activityStore.ts
+@@ -0,0 +1,38 @@
++import { atom } from 'nanostores'
++
++export type ActivityPhase = 'waiting' | 'reasoning' | 'answer' | 'preparing'
++
++export interface ActivitySignal {
++  phase: ActivityPhase
++  sessionId: string
++  since: number
++}
++
++interface ActivityEvent {
++  type: string
++  payload?: unknown
++}
++
++export const $activitySignal = atom<ActivitySignal>({ phase: 'waiting', sessionId: '', since: 0 })
++
++const PHASES: Record<string, ActivityPhase> = {
++  'message.start': 'waiting',
++  'message.complete': 'waiting',
++  'message.interim': 'waiting',
++  'tool.start': 'waiting',
++  'tool.complete': 'waiting',
++  'reasoning.delta': 'reasoning',
++  'message.delta': 'answer',
++  'tool.generating': 'preparing',
++  error: 'waiting'
++}
++
++export function observeActivity(event: ActivityEvent, sessionId: string, now = Date.now()) {
++  const phase = PHASES[event.type]
++  if (!phase) return
++  const payload = event.payload as Record<string, unknown> | undefined
++  if (event.type.endsWith('.delta') && !payload?.text) return
++  const previous = $activitySignal.get()
++  if (previous.phase === phase && previous.sessionId === sessionId && event.type !== 'message.start') return
++  $activitySignal.set({ phase, sessionId, since: now })
++}
+diff --git a/ui-tui/src/app/clipboardFeedback.ts b/ui-tui/src/app/clipboardFeedback.ts
+new file mode 100644
+index 0000000000..ca3055a3b3
+--- /dev/null
++++ b/ui-tui/src/app/clipboardFeedback.ts
+@@ -0,0 +1,42 @@
++import { atom } from 'nanostores'
++import type { useSelection } from '@hermes/ink'
++
++import { writeClipboardText } from '../lib/clipboard.js'
++
++export class ClipboardFeedback {
++  readonly visible = atom(false)
++  private pending: Promise<unknown> = Promise.resolve()
++  private timer: ReturnType<typeof setTimeout> | undefined
++
++  constructor(private readonly write: (text: string) => Promise<boolean> = writeClipboardText) {}
++
++  watchSelection(selection: Pick<ReturnType<typeof useSelection>, 'getState' | 'getTextSelectionText' | 'subscribe'>,
++    copy: () => void = () => { void this.copyText(selection.getTextSelectionText()) }): () => void {
++    const isDragging = () => Boolean((selection.getState() as { isDragging?: boolean } | null)?.isDragging)
++    let wasDragging = isDragging()
++    return selection.subscribe(() => {
++      const dragging = isDragging()
++      const released = wasDragging && !dragging
++      wasDragging = dragging
++      if (released) copy()
++    })
++  }
++
++  copyText(text: string): Promise<boolean> {
++    if (!text) return Promise.resolve(false)
++    const copy = this.pending.then(async () => {
++      const copied = await this.write(text).catch(() => false)
++      clearTimeout(this.timer)
++      this.visible.set(copied)
++      if (copied) {
++        this.timer = setTimeout(() => this.visible.set(false), 2000)
++        this.timer.unref?.()
++      }
++      return copied
++    })
++    this.pending = copy
++    return copy
++  }
++}
++
++export const clipboardFeedback = new ClipboardFeedback()
+diff --git a/ui-tui/src/components/activityTicker.tsx b/ui-tui/src/components/activityTicker.tsx
+new file mode 100644
+index 0000000000..354ec0cb42
+--- /dev/null
++++ b/ui-tui/src/components/activityTicker.tsx
+@@ -0,0 +1,51 @@
++import { Text } from '@hermes/ink'
++import { useStore } from '@nanostores/react'
++import { useEffect, useRef, useState } from 'react'
++
++import { $activitySignal } from '../app/activityStore.js'
++import { $isStatusRuleOccluded, $overlayState, hasPromptOpen } from '../app/overlayStore.js'
++import { $turnState } from '../app/turnStore.js'
++import { $uiState } from '../app/uiStore.js'
++import { ActivityStatus } from '../lib/activityStatus.js'
++import type { Theme } from '../theme.js'
++
++interface ActivityTickerProps {
++  t: Theme
++  width: number
++  compacting: boolean
++}
++
++export function ActivityTicker({ t, width, compacting }: ActivityTickerProps) {
++  const signal = useStore($activitySignal)
++  const ui = useStore($uiState)
++  const turn = useStore($turnState)
++  const overlay = useStore($overlayState)
++  const occluded = useStore($isStatusRuleOccluded)
++  const tracker = useRef(new ActivityStatus())
++  const [now, setNow] = useState(Date.now)
++  const [tick, setTick] = useState(0)
++  const waiting = hasPromptOpen(overlay)
++  const view = tracker.current.update(
++    { sessionId: ui.sid ?? '', signal, tools: turn.tools, waiting, compacting },
++    Date.now()
++  )
++
++  useEffect(() => {
++    if (occluded) return
++    setNow(Date.now())
++    const timer = setInterval(
++      () => {
++        setNow(Date.now())
++        if (!waiting) setTick(value => value + 1)
++      },
++      waiting ? 1000 : 250
++    )
++    return () => clearInterval(timer)
++  }, [occluded, waiting])
++
++  return (
++    <Text color={t.color[ActivityStatus.colorKey(now - view.since)]} wrap="truncate-end">
++      {ActivityStatus.format(view, tick, now, width)}
++    </Text>
++  )
++}
+diff --git a/ui-tui/src/domain/serviceNotifications.ts b/ui-tui/src/domain/serviceNotifications.ts
+new file mode 100644
+index 0000000000..2a369a69b1
+--- /dev/null
++++ b/ui-tui/src/domain/serviceNotifications.ts
+@@ -0,0 +1,35 @@
++import type { Msg } from '../types.js'
++
++const INTERNAL_MARKER = '[INTERNAL NOTIFICATION \u2014 generated by the Hermes gateway, not written by a human user.'
++
++export const isServiceNotificationKind = (kind: unknown): boolean =>
++  kind === 'internal_notification' || kind === 'async_delegation_complete' || kind === 'process_complete'
++
++export const serviceNotificationTitle = (msg: Msg): null | string => {
++  if (msg.role !== 'user' && msg.role !== 'system') return null
++  const header = msg.text.split('\n', 1)[0] ?? ''
++  const process = /^\[(?:IMPORTANT: )?Background process (proc_[\w-]+)\b/.exec(header)
++  const delegation = /^\[ASYNC DELEGATION BATCH COMPLETE \u2014 (deleg_[\w-]+)\]/.exec(header)
++  if (msg.kind !== 'notification' && !((process || delegation) && msg.text.includes(INTERNAL_MARKER))) return null
++  const title = msg.notificationTitle?.split('\n', 1)[0]?.trim()
++  if (title && !process) return title
++  if (delegation) return `\u041f\u043e\u0434\u0430\u0433\u0435\u043d\u0442\u044b \u00b7 ${delegation[1]}`
++  if (!process)
++    return '\u0421\u043b\u0443\u0436\u0435\u0431\u043d\u043e\u0435 \u0443\u0432\u0435\u0434\u043e\u043c\u043b\u0435\u043d\u0438\u0435'
++
++  const exitCode = /exit code (-?\d+)/.exec(header)?.[1]
++  const state =
++    exitCode === '0'
++      ? '\u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043d\u0430'
++      : exitCode !== undefined
++        ? `\u043e\u0448\u0438\u0431\u043a\u0430, \u043a\u043e\u0434 ${exitCode}`
++        : /heartbeat|still running/.test(header)
++          ? '\u0432\u044b\u043f\u043e\u043b\u043d\u044f\u0435\u0442\u0441\u044f'
++          : '\u043e\u0431\u043d\u043e\u0432\u043b\u0435\u043d\u0438\u0435'
++  return `\u0424\u043e\u043d\u043e\u0432\u0430\u044f \u0437\u0430\u0434\u0430\u0447\u0430: ${state} \u00b7 ${process[1]}`
++}
++
++export const asServiceNotification = (msg: Msg, internal = false, title?: string): Msg => {
++  const candidate: Msg = internal ? { ...msg, kind: 'notification', ...(title && { notificationTitle: title }) } : msg
++  return serviceNotificationTitle(candidate) === null ? msg : { ...candidate, kind: 'notification', role: 'system' }
++}
+diff --git a/ui-tui/src/lib/activityStatus.ts b/ui-tui/src/lib/activityStatus.ts
+new file mode 100644
+index 0000000000..2b5f9bc75a
+--- /dev/null
++++ b/ui-tui/src/lib/activityStatus.ts
+@@ -0,0 +1,106 @@
++import { stringWidth } from '@hermes/ink'
++
++import type { ActivitySignal } from '../app/activityStore.js'
++import type { ActiveTool } from '../types.js'
++
++interface ActivityInput {
++  sessionId: string
++  signal: ActivitySignal
++  tools: ActiveTool[]
++  compacting: boolean
++  waiting: boolean
++}
++
++export interface ActivityView {
++  key: string
++  label: string
++  paused: boolean
++  since: number
++}
++
++const PHASE_LABELS = {
++  waiting: 'Ожидание модели',
++  reasoning: 'Получение рассуждений',
++  answer: 'Получение ответа',
++  preparing: 'Подготовка вызова'
++}
++
++const TOOL_LABELS: Record<string, string> = {
++  terminal: 'Выполнение команды',
++  execute_code: 'Выполнение кода',
++  read_file: 'Чтение файла',
++  search_files: 'Поиск в файлах',
++  write_file: 'Запись файла',
++  patch: 'Изменение файла',
++  web_search: 'Поиск в интернете',
++  web_extract: 'Чтение страницы',
++  browser_exec: 'Работа с браузером',
++  delegate_task: 'Работа подагента',
++  skill_view: 'Чтение навыка',
++  skill_manage: 'Изменение навыка',
++  memory: 'Обновление памяти',
++  clarify: 'Подготовка вопроса',
++  tool_call: 'Вызов инструмента',
++  process_manage: 'Ожидание процесса'
++}
++
++export class ActivityStatus {
++  private current: ActivityView | null = null
++
++  update(input: ActivityInput, now: number): ActivityView {
++    const signal = input.signal.sessionId === input.sessionId ? input.signal : { phase: 'waiting' as const, since: 0 }
++    let key: string = `${signal.phase}:${signal.since}`
++    let label = PHASE_LABELS[signal.phase]
++    if (input.waiting) {
++      key = 'input'
++      label = 'Требуется ответ'
++    } else if (input.compacting) {
++      key = 'compacting'
++      label = 'Сжатие контекста'
++    } else if (input.tools.length) {
++      const tool = input.tools[0]!
++      key = `tool:${tool.id}`
++      label = TOOL_LABELS[tool.name] ?? 'Выполнение инструмента'
++      if (input.tools.length > 1) label += ` +${input.tools.length - 1}`
++    }
++    key = `${input.sessionId}:${key}`
++    const since = this.current?.key === key ? this.current.since : now
++    this.current = { key, label, paused: input.waiting, since }
++    return this.current
++  }
++
++  static colorKey(elapsed: number): 'statusGood' | 'statusWarn' | 'statusCritical' {
++    if (elapsed >= 60 * 60_000) return 'statusCritical'
++    if (elapsed >= 10 * 60_000) return 'statusWarn'
++    return 'statusGood'
++  }
++
++  static frame(tick: number, paused: boolean): string {
++    if (paused) return '[────────]'
++    const offset = tick % 14
++    const position = offset <= 7 ? offset : 14 - offset
++    return `[${'░'.repeat(position)}█${'░'.repeat(7 - position)}]`
++  }
++
++  static format(view: ActivityView, tick: number, now: number, width: number): string {
++    const frame = this.frame(tick, view.paused)
++    const seconds = Math.max(0, Math.floor((now - view.since) / 1000))
++    const duration = seconds < 60 ? `${seconds}с` : `${Math.floor(seconds / 60)}м ${seconds % 60}с`
++    const tail = ` · ${duration}`
++    if (width < stringWidth(frame + tail) + 3) return this.clip(frame + tail, width)
++    const budget = width - stringWidth(frame + ' ' + tail)
++    const label = this.clip(view.label, budget)
++    return frame + ' ' + label + ' '.repeat(Math.max(0, budget - stringWidth(label))) + tail
++  }
++
++  private static clip(text: string, width: number): string {
++    if (width <= 0) return ''
++    if (stringWidth(text) <= width) return text
++    let result = ''
++    for (const character of text) {
++      if (stringWidth(result + character) > width - 1) break
++      result += character
++    }
++    return result + '…'
++  }
++}

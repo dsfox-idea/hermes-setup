@@ -1,0 +1,230 @@
+{
+  "date": "2026-11-03",
+  "active_cloud_route": {
+    "model": "gpt-6-astra-900k",
+    "provider": "openai-codex",
+    "reasoning_effort": "high",
+    "reasoning_effort_wire": "high",
+    "service_tier": ""
+  },
+  "models": {
+    "local": "qwen36-35b-heretic",
+    "cloud": "gpt-6-astra"
+  },
+  "system_snapshot": {
+    "characters": 36044,
+    "sha256": "184698b3ed99aa4ed4f28c2b5f038438e974c6334a25cb8921683da52aa9a20c",
+    "local_template_preserves_text": true,
+    "private_body_published": false
+  },
+  "synthetic_user_task": "\u041d\u0430\u043f\u0438\u0448\u0438 \u043d\u0430 Python \u0444\u0443\u043d\u043a\u0446\u0438\u044e stable_unique(items). \u041e\u043d\u0430 \u0432\u043e\u0437\u0432\u0440\u0430\u0449\u0430\u0435\u0442 \u043d\u043e\u0432\u044b\u0439 \u0441\u043f\u0438\u0441\u043e\u043a, \u0441\u043e\u0445\u0440\u0430\u043d\u044f\u0435\u0442 \u043f\u043e\u0440\u044f\u0434\u043e\u043a \u043f\u0435\u0440\u0432\u044b\u0445 \u0432\u0445\u043e\u0436\u0434\u0435\u043d\u0438\u0439 \u0438 \u0441\u0440\u0430\u0432\u043d\u0438\u0432\u0430\u0435\u0442 \u0437\u043d\u0430\u0447\u0435\u043d\u0438\u044f \u043f\u043e \u0440\u0430\u0432\u0435\u043d\u0441\u0442\u0432\u0443. \u0412\u043e \u0432\u0445\u043e\u0434\u0435 \u043c\u043e\u0433\u0443\u0442 \u0431\u044b\u0442\u044c \u0447\u0438\u0441\u043b\u0430, \u0441\u0442\u0440\u043e\u043a\u0438, \u0441\u043f\u0438\u0441\u043a\u0438 \u0438 \u0441\u043b\u043e\u0432\u0430\u0440\u0438, \u0432\u043a\u043b\u044e\u0447\u0430\u044f \u043d\u0435\u0445\u0435\u0448\u0438\u0440\u0443\u0435\u043c\u044b\u0435 \u0437\u043d\u0430\u0447\u0435\u043d\u0438\u044f. \u0412\u0445\u043e\u0434\u043d\u044b\u0435 \u0434\u0430\u043d\u043d\u044b\u0435 \u0438\u0437\u043c\u0435\u043d\u044f\u0442\u044c \u043d\u0435\u043b\u044c\u0437\u044f. \u041e\u0431\u0434\u0443\u043c\u0430\u0439 \u0433\u0440\u0430\u043d\u0438\u0447\u043d\u044b\u0435 \u0441\u043b\u0443\u0447\u0430\u0438. \u0412\u0435\u0440\u043d\u0438 \u0442\u043e\u043b\u044c\u043a\u043e JSON \u0441 \u0434\u0432\u0443\u043c\u044f \u0441\u0442\u0440\u043e\u043a\u043e\u0432\u044b\u043c\u0438 \u043f\u043e\u043b\u044f\u043c\u0438: code \u0438 explanation. \u0412 code \u043f\u043e\u043c\u0435\u0441\u0442\u0438 \u0442\u043e\u043b\u044c\u043a\u043e \u043e\u043f\u0440\u0435\u0434\u0435\u043b\u0435\u043d\u0438\u0435 \u0444\u0443\u043d\u043a\u0446\u0438\u0438 \u0431\u0435\u0437 \u0438\u043c\u043f\u043e\u0440\u0442\u043e\u0432, \u043f\u0440\u0438\u043c\u0435\u0440\u043e\u0432 \u0438\u0441\u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u043d\u0438\u044f \u0438 \u043a\u043e\u043c\u043c\u0435\u043d\u0442\u0430\u0440\u0438\u0435\u0432. \u0412 explanation \u043f\u043e-\u0440\u0443\u0441\u0441\u043a\u0438 \u043e\u0431\u044a\u044f\u0441\u043d\u0438 \u0430\u043b\u0433\u043e\u0440\u0438\u0442\u043c \u0438 \u0435\u0433\u043e \u043e\u0433\u0440\u0430\u043d\u0438\u0447\u0435\u043d\u0438\u044f, \u043d\u0435 \u0431\u043e\u043b\u0435\u0435 90 \u0441\u043b\u043e\u0432. \u041d\u0435 \u0434\u043e\u0431\u0430\u0432\u043b\u044f\u0439 \u0431\u043b\u043e\u043a\u0438 Markdown.\n\u042d\u0442\u043e \u0438\u0437\u043e\u043b\u0438\u0440\u043e\u0432\u0430\u043d\u043d\u0430\u044f \u043f\u0440\u043e\u0432\u0435\u0440\u043a\u0430 \u043e\u0442\u0432\u0435\u0442\u0430: \u043d\u0435 \u0438\u0437\u043c\u0435\u043d\u044f\u0439 \u0444\u0430\u0439\u043b\u044b \u0438 \u043d\u0435 \u0432\u044b\u0437\u044b\u0432\u0430\u0439 \u0438\u043d\u0441\u0442\u0440\u0443\u043c\u0435\u043d\u0442\u044b. \u0412\u0435\u0440\u043d\u0438 \u0437\u0430\u043f\u0440\u043e\u0448\u0435\u043d\u043d\u044b\u0439 JSON \u043d\u0435\u043f\u043e\u0441\u0440\u0435\u0434\u0441\u0442\u0432\u0435\u043d\u043d\u043e \u0432 \u043e\u0442\u0432\u0435\u0442\u0435.",
+  "method": "Identical frozen complete application system prompt from the active cloud session and identical Russian task; no history or tools; local thinking on versus cloud high; warmup excluded",
+  "samples": [
+    {
+      "route": "local",
+      "system_sha256": "184698b3ed99aa4ed4f28c2b5f038438e974c6334a25cb8921683da52aa9a20c",
+      "prompt_sha256": "6eed1f424b356b065b2053d6359063602b3e37de1e9f59b0751baa42ffb71a5b",
+      "total_seconds": 44.20493525000347,
+      "first_final_text_seconds": 41.38519712499692,
+      "visible_characters": 734,
+      "reasoning_confirmed": true,
+      "visible_tokens": 182,
+      "reasoning_tokens": 1910,
+      "reasoning_characters": 7394,
+      "total_tokens": 2094,
+      "input_tokens": 9106,
+      "status": "stop",
+      "reasoning_evidence": "Streamed separate reasoning; tokens counted with the model tokenizer",
+      "wire_settings": {
+        "enable_thinking": true,
+        "max_tokens": 16384
+      },
+      "sample": 1,
+      "answer_check": {
+        "json_valid": true,
+        "code_passed": true,
+        "explanation_in_russian": true,
+        "explanation_words": 68,
+        "word_limit_met": true,
+        "cases": 7
+      }
+    },
+    {
+      "route": "cloud",
+      "system_sha256": "184698b3ed99aa4ed4f28c2b5f038438e974c6334a25cb8921683da52aa9a20c",
+      "prompt_sha256": "6eed1f424b356b065b2053d6359063602b3e37de1e9f59b0751baa42ffb71a5b",
+      "total_seconds": 14.526351042004535,
+      "first_final_text_seconds": 13.13166212500073,
+      "visible_characters": 901,
+      "reasoning_confirmed": true,
+      "visible_tokens": 228,
+      "reasoning_tokens": 176,
+      "reasoning_characters": 39,
+      "total_tokens": 404,
+      "input_tokens": 8829,
+      "status": "completed",
+      "response_model": "gpt-6-astra",
+      "reasoning_evidence": "Provider-reported reasoning token count",
+      "wire_settings": {
+        "effort": "high",
+        "max_output_tokens": null,
+        "output_cap_note": "The subscription endpoint does not accept the local model's token-cap parameter; final-answer constraints are identical"
+      },
+      "sample": 1,
+      "answer_check": {
+        "json_valid": true,
+        "code_passed": true,
+        "explanation_in_russian": true,
+        "explanation_words": 89,
+        "word_limit_met": true,
+        "cases": 7
+      }
+    },
+    {
+      "route": "cloud",
+      "system_sha256": "184698b3ed99aa4ed4f28c2b5f038438e974c6334a25cb8921683da52aa9a20c",
+      "prompt_sha256": "500ae563f19a6dcbfd3354108ffb89b83d02925c7fff4e097bdd8fea5143b3d8",
+      "total_seconds": 17.318341207996127,
+      "first_final_text_seconds": 10.584656624996569,
+      "visible_characters": 840,
+      "reasoning_confirmed": true,
+      "visible_tokens": 215,
+      "reasoning_tokens": 103,
+      "reasoning_characters": 30,
+      "total_tokens": 318,
+      "input_tokens": 8829,
+      "status": "completed",
+      "response_model": "gpt-6-astra",
+      "reasoning_evidence": "Provider-reported reasoning token count",
+      "wire_settings": {
+        "effort": "high",
+        "max_output_tokens": null,
+        "output_cap_note": "The subscription endpoint does not accept the local model's token-cap parameter; final-answer constraints are identical"
+      },
+      "sample": 2,
+      "answer_check": {
+        "json_valid": true,
+        "code_passed": true,
+        "explanation_in_russian": true,
+        "explanation_words": 80,
+        "word_limit_met": true,
+        "cases": 7
+      }
+    },
+    {
+      "route": "local",
+      "system_sha256": "184698b3ed99aa4ed4f28c2b5f038438e974c6334a25cb8921683da52aa9a20c",
+      "prompt_sha256": "500ae563f19a6dcbfd3354108ffb89b83d02925c7fff4e097bdd8fea5143b3d8",
+      "total_seconds": 36.70051108401094,
+      "first_final_text_seconds": 33.949168167004245,
+      "visible_characters": 659,
+      "reasoning_confirmed": true,
+      "visible_tokens": 172,
+      "reasoning_tokens": 1255,
+      "reasoning_characters": 4233,
+      "total_tokens": 1430,
+      "input_tokens": 9106,
+      "status": "stop",
+      "reasoning_evidence": "Streamed separate reasoning; tokens counted with the model tokenizer",
+      "wire_settings": {
+        "enable_thinking": true,
+        "max_tokens": 16384
+      },
+      "sample": 2,
+      "answer_check": {
+        "json_valid": true,
+        "code_passed": true,
+        "explanation_in_russian": true,
+        "explanation_words": 63,
+        "word_limit_met": true,
+        "cases": 7
+      }
+    },
+    {
+      "route": "local",
+      "system_sha256": "184698b3ed99aa4ed4f28c2b5f038438e974c6334a25cb8921683da52aa9a20c",
+      "prompt_sha256": "d8424f07ea5b13be1dace7fc9ceda5f629d166039f7d9be7ebd07c5e3c4e04b6",
+      "total_seconds": 35.12137162500585,
+      "first_final_text_seconds": 32.59205133300566,
+      "visible_characters": 680,
+      "reasoning_confirmed": true,
+      "visible_tokens": 168,
+      "reasoning_tokens": 1447,
+      "reasoning_characters": 5870,
+      "total_tokens": 1617,
+      "input_tokens": 9106,
+      "status": "stop",
+      "reasoning_evidence": "Streamed separate reasoning; tokens counted with the model tokenizer",
+      "wire_settings": {
+        "enable_thinking": true,
+        "max_tokens": 16384
+      },
+      "sample": 3,
+      "answer_check": {
+        "json_valid": true,
+        "code_passed": true,
+        "explanation_in_russian": true,
+        "explanation_words": 69,
+        "word_limit_met": true,
+        "cases": 7
+      }
+    },
+    {
+      "route": "cloud",
+      "system_sha256": "184698b3ed99aa4ed4f28c2b5f038438e974c6334a25cb8921683da52aa9a20c",
+      "prompt_sha256": "d8424f07ea5b13be1dace7fc9ceda5f629d166039f7d9be7ebd07c5e3c4e04b6",
+      "total_seconds": 17.866212624998298,
+      "first_final_text_seconds": 15.72265295899706,
+      "visible_characters": 804,
+      "reasoning_confirmed": true,
+      "visible_tokens": 217,
+      "reasoning_tokens": 169,
+      "reasoning_characters": 39,
+      "total_tokens": 386,
+      "input_tokens": 8829,
+      "status": "completed",
+      "response_model": "gpt-6-astra",
+      "reasoning_evidence": "Provider-reported reasoning token count",
+      "wire_settings": {
+        "effort": "high",
+        "max_output_tokens": null,
+        "output_cap_note": "The subscription endpoint does not accept the local model's token-cap parameter; final-answer constraints are identical"
+      },
+      "sample": 3,
+      "answer_check": {
+        "json_valid": true,
+        "code_passed": true,
+        "explanation_in_russian": true,
+        "explanation_words": 80,
+        "word_limit_met": true,
+        "cases": 7
+      }
+    }
+  ],
+  "summary": {
+    "local": {
+      "samples": 3,
+      "reasoning_confirmed_every_time": true,
+      "correct_answers": 3,
+      "total_seconds": 36.70051108401094,
+      "first_final_text_seconds": 33.949168167004245,
+      "visible_tokens": 172,
+      "reasoning_tokens": 1447
+    },
+    "cloud": {
+      "samples": 3,
+      "reasoning_confirmed_every_time": true,
+      "correct_answers": 3,
+      "total_seconds": 17.318341207996127,
+      "first_final_text_seconds": 13.13166212500073,
+      "visible_tokens": 217,
+      "reasoning_tokens": 169
+    }
+  },
+  "limitations": [
+    "Three repetitions of one coding task; not a general quality ranking.",
+    "Same complete cached system snapshot on both routes, but no conversation history or executable tools.",
+    "Local thinking enabled and cloud high effort verified; native reasoning budgets and tokenizers differ.",
+    "Comparison with the earlier Sol result is historical, not a contemporaneous three-model experiment."
+  ]
+}

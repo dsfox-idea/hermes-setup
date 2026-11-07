@@ -1,0 +1,96 @@
+--- a/mflux/models/qwen/model/qwen_text_encoder/qwen_attention.py
++++ b/mflux/models/qwen/model/qwen_text_encoder/qwen_attention.py
+@@ -92,7 +92,7 @@
+         mrope_section: list[int],
+         unsqueeze_dim: int = 1,
+     ) -> tuple[mx.array, mx.array]:
+-        mrope_section_doubled = [s * 2 for s in mrope_section]
++        mrope_section_doubled = mrope_section * 2
+ 
+         cos, sin = position_embeddings
+         cos_chunks = []
+--- a/mflux/models/qwen/model/qwen_text_encoder/qwen_encoder.py
++++ b/mflux/models/qwen/model/qwen_text_encoder/qwen_encoder.py
+@@ -1,4 +1,5 @@
+ import mlx.core as mx
++import numpy as np
+ from mlx import nn
+ 
+ from mflux.models.qwen.model.qwen_text_encoder.qwen_encoder_layer import QwenEncoderLayer
+@@ -84,9 +85,7 @@
+ 
+                 new_embeds = mx.stack(new_embeds_list, axis=0)
+                 inputs_embeds = new_embeds.reshape(inputs_embeds.shape)
+-        cache_position = mx.arange(seq_len, dtype=mx.int32)
+-        position_ids = mx.expand_dims(mx.expand_dims(cache_position, axis=0), axis=0)
+-        position_ids = mx.broadcast_to(position_ids, (3, batch_size, seq_len))
++        position_ids = self._position_ids(input_ids, attention_mask, image_grid_thw)
+         padding_mask = mx.where(
+             attention_mask == 1,
+             mx.zeros_like(attention_mask).astype(mx.float32),
+@@ -111,3 +110,54 @@
+ 
+         hidden_states = self.norm(hidden_states)
+         return hidden_states
++
++    def _position_ids(self, input_ids, attention_mask, image_grid_thw):
++        batch_size, sequence_length = input_ids.shape
++        if image_grid_thw is None:
++            positions = mx.arange(sequence_length, dtype=mx.int32)[None, None, :]
++            return mx.broadcast_to(positions, (3, batch_size, sequence_length))
++
++        tokens = np.array(input_ids)
++        masks = np.array(attention_mask, dtype=bool)
++        positions = np.ones((3, batch_size, sequence_length), dtype=np.int32)
++        grids = image_grid_thw.tolist()
++        grid_index = 0
++        merge_size = getattr(self.visual, "spatial_merge_size", 2)
++        for batch_index in range(batch_size):
++            valid = np.flatnonzero(masks[batch_index])
++            row = tokens[batch_index, valid].tolist()
++            row_positions = np.empty((3, len(row)), dtype=np.int32)
++            cursor = next_position = 0
++            while cursor < len(row):
++                try:
++                    image_start = row.index(self.image_token_id, cursor)
++                except ValueError:
++                    image_start = len(row)
++                text_length = image_start - cursor
++                row_positions[:, cursor:image_start] = np.arange(text_length) + next_position
++                next_position += text_length
++                if image_start == len(row):
++                    break
++                if grid_index >= len(grids):
++                    raise ValueError("Image tokens have no corresponding spatial grid")
++                frames, height, width = grids[grid_index]
++                grid_index += 1
++                if frames < 1 or height < merge_size or width < merge_size or height % merge_size or width % merge_size:
++                    raise ValueError("Invalid image spatial grid")
++                height, width = height // merge_size, width // merge_size
++                count = frames * height * width
++                end = image_start + count
++                if end > len(row) or any(token != self.image_token_id for token in row[image_start:end]):
++                    raise ValueError("Image token count does not match its spatial grid")
++                spatial = np.stack([
++                    np.zeros(count, dtype=np.int32),
++                    np.tile(np.repeat(np.arange(height), width), frames),
++                    np.tile(np.arange(width), frames * height),
++                ])
++                row_positions[:, image_start:end] = spatial + next_position
++                next_position += max(height, width)
++                cursor = end
++            positions[:, batch_index][:, valid] = row_positions
++        if grid_index != len(grids):
++            raise ValueError("Spatial grids have no corresponding image tokens")
++        return mx.array(positions)
+--- a/mflux/models/qwen/qwen_initializer.py
++++ b/mflux/models/qwen/qwen_initializer.py
+@@ -60,7 +60,7 @@
+         model.tokenizers["qwen_vl"] = QwenVisionLanguageTokenizer(
+             processor=processor,
+             max_length=1024,
+-            use_picture_prefix=False,
++            use_picture_prefix=True,
+         )
+         model.qwen_vl_encoder = QwenVisionLanguageEncoder(encoder=model.text_encoder.encoder)
+ 

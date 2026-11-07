@@ -1,0 +1,27 @@
+{
+  "Qwen/Qwen-Image-Edit": {
+    "revision": "ac7f9318f633fc4b5778c59367c8128225f1e3de",
+    "layers": {
+      "img_in": 0.1507226675748825,
+      "transformer_blocks.0.attn.to_q": 0.23000554740428925,
+      "transformer_blocks.30.attn.to_q": 0.21703454852104187
+    }
+  },
+  "Qwen/Qwen-Image-Edit-2509": {
+    "revision": "d3968ef930e841f4c73640fb8afa3b306a78167e",
+    "layers": {
+      "img_in": 0.007235078141093254,
+      "transformer_blocks.0.attn.to_q": 0.011605857871472836,
+      "transformer_blocks.30.attn.to_q": 0.007274121046066284
+    }
+  },
+  "Qwen/Qwen-Image-Edit-2511": {
+    "revision": "6f3ccc0b56e431dc6a0c2b2039706d7d26f22cb9",
+    "layers": {
+      "img_in": 0.04286126419901848,
+      "transformer_blocks.0.attn.to_q": 0.10851732641458511,
+      "transformer_blocks.30.attn.to_q": 0.08163928240537643
+    }
+  },
+  "tensor_bytes_downloaded": 874064
+}

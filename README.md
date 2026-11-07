@@ -1,0 +1,126 @@
+# hermes-setup
+
+A Hermes Agent customization: the `dsfox-skin` theme plus a patched terminal UI.
+One script installs it into every Hermes profile without modifying the Hermes
+source checkout, and rebuilds it after each `hermes update`.
+
+| Part | What you get |
+| --- | --- |
+| Skin (`skins/dsfox-skin.yaml`) | Muted green ANSI-256 palette, high-contrast diffs, `DSFOX-AGENT` wordmark |
+| TUI patch (`patches/hermes-tui.patch`) | Chat canvas `#1c1c1c`, black user messages and composer, compact transcript, themed choice cards, `activity` status indicator with elapsed-time colors, copy confirmation on mouse selection |
+| Optional | Extended `hermes-agent` skill notes |
+
+Without the patch the skin still applies colors and branding; the canvas,
+message backgrounds, choice cards and `activity` indicator need the patch.
+
+## Requirements
+
+- Hermes Agent installed with the official installer (a git checkout under the
+  Hermes home), started at least once in TUI mode (`hermes --tui`) so its Node
+  dependencies exist.
+- `git` and Python 3.10+.
+
+| Platform | Hermes home | Python command |
+| --- | --- | --- |
+| macOS, Linux | `~/.hermes` | `python3` |
+| Windows | `%LOCALAPPDATA%\hermes` | `py -3` (Python launcher) |
+
+`HERMES_HOME`, when set, overrides the Hermes home.
+
+## Install
+
+macOS / Linux:
+
+```sh
+git clone https://github.com/dsfox-idea/hermes-setup.git
+cd hermes-setup
+python3 -I scripts/setup.py install
+```
+
+Windows (PowerShell):
+
+```powershell
+git clone https://github.com/dsfox-idea/hermes-setup.git
+cd hermes-setup
+py -3 -I scripts\setup.py install
+```
+
+For every profile (`default` and each one under `profiles/`) the script:
+
+1. copies the skin into `<profile>/skins/` and runs `hermes skin use dsfox-skin`;
+2. sets `display.interface tui` and `display.tui_compact true`;
+3. builds the patched TUI into `<Hermes home>/tui-overlay/ui-tui` and points
+   Hermes at it with `HERMES_TUI_DIR` in the profile's `.env`;
+4. sets `display.tui_status_indicator activity`;
+5. installs the `tui-overlay` gateway hook into `<Hermes home>/hooks/`.
+
+Options, combinable:
+
+| Option | Effect |
+| --- | --- |
+| `--timezone Europe/Berlin` | Sets `timezone` in every profile |
+| `--skill` | Replaces the `hermes-agent` skill with `skills/autonomous-ai-agents/hermes-agent` |
+
+`--skill` first backs up the replaced skill to
+`<profile>/backups/hermes-setup-<timestamp>/`.
+
+Exit code 1 means the patch does not fit your Hermes version: the skin is
+installed, the stock TUI stays, and the reason is in the output.
+
+## Check
+
+```sh
+python3 -I scripts/setup.py status    # Windows: py -3 -I scripts\setup.py status
+```
+
+It must print `patched TUI current: True`. Then open a new TUI window
+(`hermes`): the canvas is dark gray and the wordmark reads `DSFOX-AGENT`.
+Windows that were already open keep the old interface until restarted.
+
+`hermes config get display.tui_compact` warns that the key is not recognized.
+That is expected: the TUI reads this key, the configuration validator does not
+know it.
+
+## After `hermes update`
+
+Nothing to do. The update restarts the gateway; the `tui-overlay` hook then
+compares the Hermes version with the last build and rebuilds in the background
+(about 15 s). Until the rebuild finishes, and permanently if the patch no longer
+fits, Hermes uses its stock TUI. The last run is logged in
+`<Hermes home>/hooks/tui-overlay/last-run.log`.
+
+To take a newer version of this customization:
+
+```sh
+git pull
+python3 -I scripts/setup.py install    # Windows: py -3 -I scripts\setup.py install
+```
+
+## Uninstall
+
+```sh
+python3 -I scripts/setup.py uninstall  # Windows: py -3 -I scripts\setup.py uninstall
+```
+
+This restores the `default` skin and the stock TUI in every profile and removes
+the hook. Backups from `--skill` stay in `<profile>/backups/`.
+
+## Platform notes
+
+| Platform | Note |
+| --- | --- |
+| Windows | Hermes refuses to modify its own running checkout; this setup never does. The build links Node dependencies with NTFS junctions. |
+| macOS | Use a regular terminal. `-I` keeps a `PYTHONPATH` exported by other tools out of the run. |
+| Linux | Same commands as macOS. Not yet exercised on Linux. |
+
+## Other contents
+
+| Path | Purpose |
+| --- | --- |
+| `scripts/setup.py`, `scripts/tui_overlay.py` | Installer and patched-TUI builder (`tui_overlay.py status/ensure/disable` handles the TUI alone) |
+| `hooks/tui-overlay/` | Gateway hook that rebuilds the TUI after updates |
+| `config.example.json` | Non-secret configuration example; set single keys with `hermes config set`, never copy it over a profile |
+| `upstream.json` | Hermes revision the patch was cut from, and the patch checksum |
+| `skills/` | Skill snapshots, including optional local-model skills |
+| `models/`, `plugins/honcho/` | Reference material for optional local models and the Honcho memory plugin; read their own README before use |
+| `docs/maintaining.md` | Updating and publishing this repository |

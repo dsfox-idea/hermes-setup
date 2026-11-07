@@ -1,0 +1,6 @@
+{
+  "repository": "https://github.com/Amo643/mflux-paint.git",
+  "revision": "2d5db24942d50b0e8561ee5c4b7e11049b67302a",
+  "runtime": "mflux==0.24.0",
+  "python": "3.13.18"
+}

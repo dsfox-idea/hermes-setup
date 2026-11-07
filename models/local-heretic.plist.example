@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key><string>local.hermes.qwen36-heretic</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/Users/USER/.hermes/local-models/venv/bin/python</string>
+        <string>-I</string><string>-u</string><string>-m</string><string>mlx_lm</string><string>server</string>
+        <string>--host</string><string>127.0.0.1</string>
+        <string>--port</string><string>18319</string>
+        <string>--allowed-origins</string><string>http://127.0.0.1:18319</string>
+        <string>--max-tokens</string><string>4096</string>
+        <string>--temp</string><string>0.6</string>
+        <string>--top-p</string><string>0.95</string>
+        <string>--top-k</string><string>20</string>
+        <string>--decode-concurrency</string><string>1</string>
+        <string>--prompt-concurrency</string><string>1</string>
+        <string>--prefill-step-size</string><string>1024</string>
+        <string>--prompt-cache-size</string><string>2</string>
+        <string>--prompt-cache-bytes</string><string>2147483648</string>
+        <string>--log-level</string><string>INFO</string>
+    </array>
+    <key>WorkingDirectory</key><string>/Users/USER/.hermes/local-models/models</string>
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>HOME</key><string>/Users/USER</string>
+        <key>PATH</key><string>/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+        <key>TMPDIR</key><string>/Users/USER/.hermes/cache/scratch</string>
+        <key>HF_HOME</key><string>/Users/USER/.hermes/local-models/huggingface</string>
+        <key>HF_HUB_OFFLINE</key><string>1</string>
+        <key>TRANSFORMERS_OFFLINE</key><string>1</string>
+        <key>HF_HUB_DISABLE_TELEMETRY</key><string>1</string>
+        <key>HF_HUB_DISABLE_IMPLICIT_TOKEN</key><string>1</string>
+        <key>TOKENIZERS_PARALLELISM</key><string>false</string>
+    </dict>
+    <key>RunAtLoad</key><true/>
+    <key>KeepAlive</key><dict><key>SuccessfulExit</key><false/></dict>
+    <key>ThrottleInterval</key><integer>30</integer>
+    <key>StandardOutPath</key><string>/Users/USER/.hermes/logs/local-heretic.out.log</string>
+    <key>StandardErrorPath</key><string>/Users/USER/.hermes/logs/local-heretic.err.log</string>
+</dict>
+</plist>

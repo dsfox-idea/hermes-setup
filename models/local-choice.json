@@ -1,0 +1,32 @@
+{
+  "user_label": "qwen36-35b-heretic",
+  "decision_date": "2026-11-02",
+  "purpose": [
+    "coding",
+    "shell commands",
+    "reasoning",
+    "Russian-language technical discussion"
+  ],
+  "expected_generation_tokens_per_second": 50,
+  "benchmark_on_this_machine_verified": true,
+  "model_repository": "froggeric/Qwen3.6-35B-A3B-Uncensored-Heretic-MLX-4bit",
+  "model_revision": "32939a6cef2750f18ccf352443f22f2e4dfe3613",
+  "base_model": "llmfan46/Qwen3.6-35B-A3B-uncensored-heretic",
+  "quantization": "MLX affine 4-bit, group size 64; routing gates at 8-bit",
+  "runtime": {
+    "package": "mlx-lm",
+    "version": "0.32.2",
+    "mlx_version": "0.32.4",
+    "python_version": "3.14.9"
+  },
+  "installation_requested": true,
+  "installation_status": "verified",
+  "main_hermes_default_changed": false,
+  "installation_date": "2026-11-03",
+  "hermes_native_tool_loop_verified": true,
+  "measured_generation_tokens_per_second": 75.97257721615406,
+  "benchmark_report": "models/acceptance.json",
+  "hermes_alias": "qwen36-35b-heretic",
+  "server_endpoint": "http://127.0.0.1:18319/v1",
+  "configured_client_context_tokens": 65536
+}

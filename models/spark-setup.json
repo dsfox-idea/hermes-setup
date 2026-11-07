@@ -1,0 +1,50 @@
+{
+  "alias": "spark",
+  "message_marker": "@spark",
+  "model": "spark-x2.6-4b",
+  "provider": "custom",
+  "base_url": "http://127.0.0.1:18320/v1",
+  "artifact": {
+    "repository": "XHToken/Spark-X2.6-4B-GGUF",
+    "revision": "3c33ab38746828196b9b5979c739ee2d0bef894d",
+    "filename": "Spark-X2.6-4B-Q4_K_M.gguf",
+    "bytes": 3543441312,
+    "sha256": "91cb2811aebb47ac916aa619d27d4cdd7f4143106b7917accb8ead4cd7f5cbd9",
+    "template_repository": "XHToken/Spark-X2.6-4B",
+    "template_revision": "aa074aa851209a683aeaf5f99a8e25a642d94541",
+    "template_sha256": "480576bd2ef80726a0dba6406d72ca37f4f4f9ca747c7f1c8d159dbdf40f6929"
+  },
+  "runtime": {
+    "name": "llama.cpp",
+    "version": "v0.8.0 / b11960",
+    "commit": "8642541b255bfb5dc39cd351a178be09013a55d6",
+    "macos_arm64_archive_sha256": "58e5a5e1d7c2bf66cedd9c29e0323f3e570660a70a1e2156d32eed08f4cc1e3c",
+    "served_context_tokens": 65536,
+    "default_reasoning_enabled": false,
+    "launch_agent": "local.hermes.spark"
+  },
+  "acceptance": {
+    "date": "2026-11-03",
+    "unit_tests_passed": 6,
+    "incomplete_native_results_rejected": true,
+    "loopback_listener_verified": true,
+    "installed_model_alias_verified": true,
+    "native_terminal_verified": true,
+    "chat_marker_end_to_end_verified": true,
+    "complete_parent_system_preserved_at_request_boundary": true,
+    "parent_session_identity_verified": true,
+    "parent_route_unchanged": true,
+    "response_returned_without_rewriting": true,
+    "cloud_default_and_memory_preserved": true
+  },
+  "limits": {
+    "native_toolsets": ["terminal", "file"],
+    "maximum_iterations": 8,
+    "run_budget_seconds": 180,
+    "maximum_output_tokens": 4096,
+    "cloud_fallback": false,
+    "automatic_compression": false,
+    "os_sandbox": false
+  },
+  "private_evidence_published": false
+}

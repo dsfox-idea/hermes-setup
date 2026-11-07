@@ -1,0 +1,222 @@
+{
+  "date": "2026-11-03",
+  "system_snapshot": {
+    "source": "Frozen complete application system prompt returned by session.info for the active cloud conversation",
+    "characters": 35861,
+    "utf8_bytes": 44736,
+    "sha256": "ac4c69c69a57a44671c618bb87ab2762331e8a6f75a86f2572cea58ee37a7b90",
+    "local_chat_template_preserves_system_text": true,
+    "private_system_body_published": false,
+    "local_input_tokens_preflight": 9063,
+    "local_configured_context_tokens": 65536
+  },
+  "synthetic_user_task": "\u041d\u0430\u043f\u0438\u0448\u0438 \u043d\u0430 Python \u0444\u0443\u043d\u043a\u0446\u0438\u044e stable_unique(items). \u041e\u043d\u0430 \u0432\u043e\u0437\u0432\u0440\u0430\u0449\u0430\u0435\u0442 \u043d\u043e\u0432\u044b\u0439 \u0441\u043f\u0438\u0441\u043e\u043a, \u0441\u043e\u0445\u0440\u0430\u043d\u044f\u0435\u0442 \u043f\u043e\u0440\u044f\u0434\u043e\u043a \u043f\u0435\u0440\u0432\u044b\u0445 \u0432\u0445\u043e\u0436\u0434\u0435\u043d\u0438\u0439 \u0438 \u0441\u0440\u0430\u0432\u043d\u0438\u0432\u0430\u0435\u0442 \u0437\u043d\u0430\u0447\u0435\u043d\u0438\u044f \u043f\u043e \u0440\u0430\u0432\u0435\u043d\u0441\u0442\u0432\u0443. \u0412\u043e \u0432\u0445\u043e\u0434\u0435 \u043c\u043e\u0433\u0443\u0442 \u0431\u044b\u0442\u044c \u0447\u0438\u0441\u043b\u0430, \u0441\u0442\u0440\u043e\u043a\u0438, \u0441\u043f\u0438\u0441\u043a\u0438 \u0438 \u0441\u043b\u043e\u0432\u0430\u0440\u0438, \u0432\u043a\u043b\u044e\u0447\u0430\u044f \u043d\u0435\u0445\u0435\u0448\u0438\u0440\u0443\u0435\u043c\u044b\u0435 \u0437\u043d\u0430\u0447\u0435\u043d\u0438\u044f. \u0412\u0445\u043e\u0434\u043d\u044b\u0435 \u0434\u0430\u043d\u043d\u044b\u0435 \u0438\u0437\u043c\u0435\u043d\u044f\u0442\u044c \u043d\u0435\u043b\u044c\u0437\u044f. \u041e\u0431\u0434\u0443\u043c\u0430\u0439 \u0433\u0440\u0430\u043d\u0438\u0447\u043d\u044b\u0435 \u0441\u043b\u0443\u0447\u0430\u0438. \u0412\u0435\u0440\u043d\u0438 \u0442\u043e\u043b\u044c\u043a\u043e JSON \u0441 \u0434\u0432\u0443\u043c\u044f \u0441\u0442\u0440\u043e\u043a\u043e\u0432\u044b\u043c\u0438 \u043f\u043e\u043b\u044f\u043c\u0438: code \u0438 explanation. \u0412 code \u043f\u043e\u043c\u0435\u0441\u0442\u0438 \u0442\u043e\u043b\u044c\u043a\u043e \u043e\u043f\u0440\u0435\u0434\u0435\u043b\u0435\u043d\u0438\u0435 \u0444\u0443\u043d\u043a\u0446\u0438\u0438 \u0431\u0435\u0437 \u0438\u043c\u043f\u043e\u0440\u0442\u043e\u0432, \u043f\u0440\u0438\u043c\u0435\u0440\u043e\u0432 \u0438\u0441\u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u043d\u0438\u044f \u0438 \u043a\u043e\u043c\u043c\u0435\u043d\u0442\u0430\u0440\u0438\u0435\u0432. \u0412 explanation \u043f\u043e-\u0440\u0443\u0441\u0441\u043a\u0438 \u043e\u0431\u044a\u044f\u0441\u043d\u0438 \u0430\u043b\u0433\u043e\u0440\u0438\u0442\u043c \u0438 \u0435\u0433\u043e \u043e\u0433\u0440\u0430\u043d\u0438\u0447\u0435\u043d\u0438\u044f, \u043d\u0435 \u0431\u043e\u043b\u0435\u0435 90 \u0441\u043b\u043e\u0432. \u041d\u0435 \u0434\u043e\u0431\u0430\u0432\u043b\u044f\u0439 \u0431\u043b\u043e\u043a\u0438 Markdown.\n\u042d\u0442\u043e \u0438\u0437\u043e\u043b\u0438\u0440\u043e\u0432\u0430\u043d\u043d\u0430\u044f \u043f\u0440\u043e\u0432\u0435\u0440\u043a\u0430 \u043e\u0442\u0432\u0435\u0442\u0430: \u043d\u0435 \u0438\u0437\u043c\u0435\u043d\u044f\u0439 \u0444\u0430\u0439\u043b\u044b \u0438 \u043d\u0435 \u0432\u044b\u0437\u044b\u0432\u0430\u0439 \u0438\u043d\u0441\u0442\u0440\u0443\u043c\u0435\u043d\u0442\u044b. \u0412\u0435\u0440\u043d\u0438 \u0437\u0430\u043f\u0440\u043e\u0448\u0435\u043d\u043d\u044b\u0439 JSON \u043d\u0435\u043f\u043e\u0441\u0440\u0435\u0434\u0441\u0442\u0432\u0435\u043d\u043d\u043e \u0432 \u043e\u0442\u0432\u0435\u0442\u0435.",
+  "method": "Identical frozen complete application system prompt from the active cloud session and identical Russian task; no history or tools; local thinking on versus cloud high; warmup excluded",
+  "samples": [
+    {
+      "route": "local",
+      "system_sha256": "ac4c69c69a57a44671c618bb87ab2762331e8a6f75a86f2572cea58ee37a7b90",
+      "prompt_sha256": "6eed1f424b356b065b2053d6359063602b3e37de1e9f59b0751baa42ffb71a5b",
+      "total_seconds": 21.05145108299621,
+      "first_final_text_seconds": 18.632282666992978,
+      "visible_characters": 601,
+      "reasoning_confirmed": true,
+      "visible_tokens": 155,
+      "reasoning_tokens": 529,
+      "reasoning_characters": 2105,
+      "total_tokens": 686,
+      "input_tokens": 9074,
+      "status": "stop",
+      "reasoning_evidence": "Streamed separate reasoning; tokens counted with the model tokenizer",
+      "wire_settings": {
+        "enable_thinking": true,
+        "max_tokens": 16384
+      },
+      "sample": 1,
+      "answer_check": {
+        "json_valid": true,
+        "code_passed": true,
+        "explanation_in_russian": true,
+        "explanation_words": 49,
+        "word_limit_met": true,
+        "cases": 7
+      }
+    },
+    {
+      "route": "cloud",
+      "system_sha256": "ac4c69c69a57a44671c618bb87ab2762331e8a6f75a86f2572cea58ee37a7b90",
+      "prompt_sha256": "6eed1f424b356b065b2053d6359063602b3e37de1e9f59b0751baa42ffb71a5b",
+      "total_seconds": 24.50500787499186,
+      "first_final_text_seconds": 22.32231283299916,
+      "visible_characters": 787,
+      "reasoning_confirmed": true,
+      "visible_tokens": 204,
+      "reasoning_tokens": 343,
+      "reasoning_characters": 71,
+      "total_tokens": 547,
+      "input_tokens": 8797,
+      "status": "completed",
+      "reasoning_evidence": "Provider-reported reasoning token count",
+      "wire_settings": {
+        "effort": "high",
+        "max_output_tokens": null,
+        "output_cap_note": "The subscription endpoint does not accept the local model's token-cap parameter; final-answer constraints are identical"
+      },
+      "sample": 1,
+      "answer_check": {
+        "json_valid": true,
+        "code_passed": true,
+        "explanation_in_russian": true,
+        "explanation_words": 78,
+        "word_limit_met": true,
+        "cases": 7
+      }
+    },
+    {
+      "route": "cloud",
+      "system_sha256": "ac4c69c69a57a44671c618bb87ab2762331e8a6f75a86f2572cea58ee37a7b90",
+      "prompt_sha256": "500ae563f19a6dcbfd3354108ffb89b83d02925c7fff4e097bdd8fea5143b3d8",
+      "total_seconds": 24.57625425000151,
+      "first_final_text_seconds": 21.366831374994945,
+      "visible_characters": 719,
+      "reasoning_confirmed": true,
+      "visible_tokens": 191,
+      "reasoning_tokens": 312,
+      "reasoning_characters": 78,
+      "total_tokens": 503,
+      "input_tokens": 8797,
+      "status": "completed",
+      "reasoning_evidence": "Provider-reported reasoning token count",
+      "wire_settings": {
+        "effort": "high",
+        "max_output_tokens": null,
+        "output_cap_note": "The subscription endpoint does not accept the local model's token-cap parameter; final-answer constraints are identical"
+      },
+      "sample": 2,
+      "answer_check": {
+        "json_valid": true,
+        "code_passed": true,
+        "explanation_in_russian": true,
+        "explanation_words": 72,
+        "word_limit_met": true,
+        "cases": 7
+      }
+    },
+    {
+      "route": "local",
+      "system_sha256": "ac4c69c69a57a44671c618bb87ab2762331e8a6f75a86f2572cea58ee37a7b90",
+      "prompt_sha256": "500ae563f19a6dcbfd3354108ffb89b83d02925c7fff4e097bdd8fea5143b3d8",
+      "total_seconds": 38.69753954200132,
+      "first_final_text_seconds": 34.65535975000239,
+      "visible_characters": 978,
+      "reasoning_confirmed": true,
+      "visible_tokens": 259,
+      "reasoning_tokens": 1572,
+      "reasoning_characters": 6045,
+      "total_tokens": 1833,
+      "input_tokens": 9074,
+      "status": "stop",
+      "reasoning_evidence": "Streamed separate reasoning; tokens counted with the model tokenizer",
+      "wire_settings": {
+        "enable_thinking": true,
+        "max_tokens": 16384
+      },
+      "sample": 2,
+      "answer_check": {
+        "json_valid": true,
+        "code_passed": true,
+        "explanation_in_russian": true,
+        "explanation_words": 60,
+        "word_limit_met": true,
+        "cases": 7
+      }
+    },
+    {
+      "route": "local",
+      "system_sha256": "ac4c69c69a57a44671c618bb87ab2762331e8a6f75a86f2572cea58ee37a7b90",
+      "prompt_sha256": "d8424f07ea5b13be1dace7fc9ceda5f629d166039f7d9be7ebd07c5e3c4e04b6",
+      "total_seconds": 46.65924104199803,
+      "first_final_text_seconds": 42.38108879199717,
+      "visible_characters": 1064,
+      "reasoning_confirmed": true,
+      "visible_tokens": 276,
+      "reasoning_tokens": 2082,
+      "reasoning_characters": 7795,
+      "total_tokens": 2360,
+      "input_tokens": 9074,
+      "status": "stop",
+      "reasoning_evidence": "Streamed separate reasoning; tokens counted with the model tokenizer",
+      "wire_settings": {
+        "enable_thinking": true,
+        "max_tokens": 16384
+      },
+      "sample": 3,
+      "answer_check": {
+        "json_valid": true,
+        "code_passed": true,
+        "explanation_in_russian": true,
+        "explanation_words": 55,
+        "word_limit_met": true,
+        "cases": 7
+      }
+    },
+    {
+      "route": "cloud",
+      "system_sha256": "ac4c69c69a57a44671c618bb87ab2762331e8a6f75a86f2572cea58ee37a7b90",
+      "prompt_sha256": "d8424f07ea5b13be1dace7fc9ceda5f629d166039f7d9be7ebd07c5e3c4e04b6",
+      "total_seconds": 22.80750279199856,
+      "first_final_text_seconds": 18.95953783299774,
+      "visible_characters": 821,
+      "reasoning_confirmed": true,
+      "visible_tokens": 209,
+      "reasoning_tokens": 271,
+      "reasoning_characters": 85,
+      "total_tokens": 480,
+      "input_tokens": 8797,
+      "status": "completed",
+      "reasoning_evidence": "Provider-reported reasoning token count",
+      "wire_settings": {
+        "effort": "high",
+        "max_output_tokens": null,
+        "output_cap_note": "The subscription endpoint does not accept the local model's token-cap parameter; final-answer constraints are identical"
+      },
+      "sample": 3,
+      "answer_check": {
+        "json_valid": true,
+        "code_passed": true,
+        "explanation_in_russian": true,
+        "explanation_words": 79,
+        "word_limit_met": true,
+        "cases": 7
+      }
+    }
+  ],
+  "summary": {
+    "local": {
+      "samples": 3,
+      "reasoning_confirmed_every_time": true,
+      "correct_answers": 3,
+      "total_seconds": 38.69753954200132,
+      "first_final_text_seconds": 34.65535975000239,
+      "visible_tokens": 259,
+      "reasoning_tokens": 1572
+    },
+    "cloud": {
+      "samples": 3,
+      "reasoning_confirmed_every_time": true,
+      "correct_answers": 3,
+      "total_seconds": 24.50500787499186,
+      "first_final_text_seconds": 21.366831374994945,
+      "visible_tokens": 204,
+      "reasoning_tokens": 312
+    }
+  },
+  "validator_correction": "The safety allowlist initially omitted harmless hash and standard exception builtins. All stored responses were revalidated using the same seven behavior cases; no inference was repeated and timing data was unchanged.",
+  "limitations": [
+    "Three repetitions of one task, not a general ranking.",
+    "Only the complete system snapshot and synthetic user task were replayed; conversation history and executable tools were not provided.",
+    "The snapshot includes already-embedded profile/context material; no new memory lookup was performed.",
+    "Native reasoning controls, tokenizers and output-cap support differ; every measured answer ended naturally without truncation.",
+    "The runtime profile, normal prompt builder and active conversation cache were not changed. Ordinary Hermes prompt assembly can contain model-dependent guidance and runtime metadata."
+  ]
+}

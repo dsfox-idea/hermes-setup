@@ -1,0 +1,24 @@
+{
+  "status": "passed",
+  "scope": "Process and delegation notification display in TUI",
+  "unit_tests": {
+    "passed": 1910,
+    "skipped": 30,
+    "scope": "clean publication source"
+  },
+  "typecheck": "passed",
+  "isolated_snapshot_check": "passed",
+  "same_session_frontend_reload": "verified",
+  "native_pointer_test": {
+    "input": "SGR mouse via live readable stdin",
+    "fixture": "Legacy delegation notification including a memory block",
+    "closed_rows": 1,
+    "expanded_rows": 5,
+    "reclosed_rows": 1,
+    "scope": "Installed notification renderer; separately rebuilt and tested portable source"
+  },
+  "deduplication_scope": "Visible notification rows by admission identity; not background-job acknowledgement or model-turn suppression",
+  "history": "Full body retained separately from collapsed title",
+  "artifact_scope": "Portable UI changes; unrelated local integrations excluded",
+  "public_bundle_sha256": "17c5894e3ae31ed08140a732d659bd4f838b3b559da92826d72f65f877f040b4"
+}

@@ -1,0 +1,83 @@
+{
+  "status": "passed_lightning_full_frame_fixture",
+  "model": "mflux-community/qwen-image-edit-2511-mflux-q8",
+  "revision": "087317af06b8b2d197f21596d6ae1cd5b1b1c902",
+  "verified_files": 28,
+  "short_test": {
+    "dimensions": [
+      1024,
+      1024
+    ],
+    "steps": 4,
+    "guidance": 2.5,
+    "generation_seconds": 334.59,
+    "visual_review": "failed: smooth background replaced by mottled texture",
+    "output": "edit-q8-1024-four-step.png"
+  },
+  "vae_roundtrip": [
+    {
+      "mode": "tiled",
+      "seconds": 5.0568755000131205,
+      "mean_absolute_error": 0.4429941177368164,
+      "peak_gb": 8.131214918
+    },
+    {
+      "mode": "untiled",
+      "seconds": 4.574693667003885,
+      "mean_absolute_error": 0.45017877221107483,
+      "peak_gb": 15.838833978
+    }
+  ],
+  "interpretation": "Samples requantized from official 2509 reproduce the installed Q8 samples exactly. The old 40-step trial used the wrong 2511 architecture; corrected short base-model trials lacked the distilled adapter and retained artifacts. The combined corrected runtime, 2509 Lightning four-step adapter, CFG 1 and author schedule passed the unmasked fixture. The contribution of each change was not isolated; this does not establish universal quality.",
+  "full_quality_test": {
+    "steps": 40,
+    "guidance": 4.0,
+    "dimensions": [
+      1024,
+      1024
+    ],
+    "status": "failed_visual_quality",
+    "output": "edit-q8-1024-quality.png",
+    "valid_for_current_architecture": false
+  },
+  "code_checks": {
+    "unit_tests_passed": 8,
+    "official_position_reference_batches_passed": 50,
+    "runtime_patch_restore_and_refusal_checks": "passed"
+  },
+  "patched_eight_step_test": {
+    "steps": 8,
+    "guidance": 2.5,
+    "generation_seconds": 644.38,
+    "output": "edit-q8-fixed-eight-step.png",
+    "visual_review": "failed: background texture persists and becomes stronger"
+  },
+  "lightning_test": {
+    "output": "edit-lightning-four-step.png",
+    "dimensions": [
+      1024,
+      1024
+    ],
+    "steps": 4,
+    "guidance": 1.0,
+    "wall_seconds": 348.54,
+    "peak_mlx_gb": 40.27,
+    "review": "passed_visual_review",
+    "mask_used": false,
+    "output_sha256": "f1e9d1d0bdffdfd8a65704343b54b280ac9b2d3e2e1e41ac6a2f01913dc73b1f",
+    "recipe": "lightning-setup.json",
+    "matched_adapter_keys": 2160,
+    "applied_adapter_layers": 720,
+    "background_crop": [
+      720,
+      80,
+      960,
+      240
+    ],
+    "background_high_frequency_rms": {
+      "original": 0.9556666016578674,
+      "patched_base_eight_steps": 6.401369094848633,
+      "lightning_four_steps": 0.8778871297836304
+    }
+  }
+}

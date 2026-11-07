@@ -1,0 +1,85 @@
+diff --git a/build.sh b/build.sh
+index eef72fc..790ad1b 100755
+--- a/build.sh
++++ b/build.sh
+@@ -17,6 +17,7 @@ trap 'rm -rf "$(dirname "$STAGE")"' EXIT
+ mkdir -p "$STAGE/Contents/MacOS" "$STAGE/Contents/Resources"
+ 
+ cp "$DIR"/server.py "$DIR"/desktop.py "$DIR"/index.html "$STAGE/Contents/Resources/"
++cp "$DIR"/LICENSE "$DIR"/LOCAL_SETUP.md "$STAGE/Contents/Resources/"
+ cp -R "$DIR/assets" "$STAGE/Contents/Resources/assets"
+ cp "$DIR/assets/icon.icns" "$STAGE/Contents/Resources/icon.icns"
+ cp -R "$DIR/.venv" "$STAGE/Contents/Resources/.venv"
+diff --git a/server.py b/server.py
+index c484cc4..f0b3405 100644
+--- a/server.py
++++ b/server.py
+@@ -24,15 +24,15 @@ def _watchdog():
+ 
+ HERE = os.path.dirname(os.path.abspath(__file__))
+ PORT = 7866
+-SAVE_DIR = os.path.expanduser("~/Pictures/mflux-paint")
++SAVE_DIR = os.path.expanduser("~/Pictures/Local Image Studio")
++MODEL_DIR = os.path.expanduser("~/.local/share/local-image-studio/models")
+ CFG_DIR  = os.path.expanduser("~/.mflux-paint")
+ PROMPTS_FILE = os.path.join(CFG_DIR, "prompts.json")
+ CUSTOM_MODELS_FILE = os.path.join(CFG_DIR, "custom_models.json")
+ # auto-detect where `uv tool install mflux` / pipx put the mflux-generate-* binaries,
+-# falling back to the Homebrew default if they're not on PATH (e.g. launched from a
+-# GUI context that doesn't inherit the shell's PATH).
++# falling back to uv's user-level binaries when Finder supplies a minimal PATH.
+ _mflux_bin = shutil.which("mflux-generate")
+-BIN = os.path.dirname(_mflux_bin) if _mflux_bin else "/opt/homebrew/bin"
++BIN = os.path.dirname(_mflux_bin) if _mflux_bin else os.path.expanduser("~/.local/bin")
+ 
+ # --- model registry -------------------------------------------------------------
+ # "shape" controls how the mflux CLI command is built (see build_cmd):
+@@ -74,10 +74,13 @@ MODELS = {
+         "gen_max": 768, "steps": 4, "guidance": 1.0, "needs_mask": False, "cached": True, "neg": False,
+     },
+     "qwen-edit": {
+-        "label": "Qwen-Image-Edit", "group": "Edit",
++        "label": "Qwen-Image-Edit-2509 Q8 Lightning 4-step", "group": "Edit",
+         "bin": f"{BIN}/mflux-generate-qwen-edit",
+-        "model": None, "base": None, "shape": "edit_multi",
+-        "gen_max": 1024, "steps": 20, "guidance": 4.0, "needs_mask": False, "cached": False,  # generic default
++        "model": f"{MODEL_DIR}/qwen-image-edit-2511-mflux-q8", "base": "qwen-image-edit", "shape": "edit_multi",
++        "gen_max": 1024, "steps": 4, "guidance": 1.0, "needs_mask": False, "cached": True, "neg": False,
++        "extra_args": ["--scheduler", "lightning_scheduler.LightningScheduler", "--lora-paths",
++                       os.path.expanduser("~/.local/share/local-image-studio/adapters/Qwen-Image-Edit-2509-Lightning-4steps-V1.0-bf16.safetensors"),
++                       "--lora-scales", "1.0", "--no-bake-lora"],
+     },
+     "kontext": {
+         "label": "FLUX.1 Kontext · image edit", "group": "Edit",
+@@ -123,9 +126,9 @@ MODELS = {
+         "gen_max": 1024, "steps": 4, "guidance": 1.0, "needs_mask": False, "cached": True, "neg": False,
+     },
+     "qwen-t2i": {
+-        "label": "Qwen-Image", "group": "Text-to-image",
+-        "bin": f"{BIN}/mflux-generate-qwen", "model": None, "base": None, "shape": "txt2img",
+-        "gen_max": 1024, "steps": 20, "guidance": 4.0, "needs_mask": False, "cached": False,  # generic default
++        "label": "Qwen-Image-2512 Q6", "group": "Text-to-image",
++        "bin": f"{BIN}/mflux-generate-qwen", "model": f"{MODEL_DIR}/qwen-image-2512-mflux-q6", "base": "qwen-image", "shape": "txt2img",
++        "gen_max": 1024, "steps": 30, "guidance": 3.5, "needs_mask": False, "cached": True,
+     },
+     "fibo-t2i": {
+         "label": "Bria FIBO", "group": "Text-to-image",
+@@ -166,6 +169,8 @@ MODELS = {
+ # these fit this app's single-image + prompt + optional-mask flow without a
+ # genuinely different UI, so half-wiring them in would just be a broken menu entry.
+ 
++MODELS = {name: MODELS[name] for name in ("qwen-t2i", "qwen-edit")}
++
+ def available_models():
+     out = [{"id": k, "label": m["label"], "group": m["group"],
+             "cached": m["cached"], "shape": m["shape"], "needs_mask": m["needs_mask"],
+@@ -249,7 +254,8 @@ def _jget(jid):
+ 
+ def build_cmd(spec, prompt, steps, guidance, seeds, negative_prompt, quantize, gw, gh, gout, gin=None, gmask=None):
+     """Pure command-builder (no I/O) so the CLI shape per model can be unit-tested directly."""
+-    cmd = [spec["bin"]]
++    cmd = [spec["bin"], "--low-ram"]
++    cmd += spec.get("extra_args", [])
+     if spec.get("model"): cmd += ["-m", spec["model"]]
+     if spec.get("base"): cmd += ["--base-model", spec["base"]]
+     cmd += ["--prompt", prompt]

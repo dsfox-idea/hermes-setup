@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key><string>local.hermes.spark</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/Users/USER/.hermes/local-models/runtimes/llama-b11960/llama-b11960/llama-server</string>
+        <string>--model</string><string>/Users/USER/.hermes/local-models/worker-bench/Spark-X2.6-4B-Q4_K_M.gguf</string>
+        <string>--chat-template-file</string><string>/Users/USER/.hermes/local-models/worker-bench/spark-x2.6-4b.jinja</string>
+        <string>--alias</string><string>spark-x2.6-4b</string>
+        <string>--host</string><string>127.0.0.1</string>
+        <string>--port</string><string>18320</string>
+        <string>--cors-origins</string><string>http://127.0.0.1:18320</string>
+        <string>--no-cors-credentials</string>
+        <string>--ctx-size</string><string>65536</string>
+        <string>--parallel</string><string>1</string>
+        <string>--gpu-layers</string><string>all</string>
+        <string>--flash-attn</string><string>on</string>
+        <string>--jinja</string>
+        <string>--reasoning-format</string><string>deepseek</string>
+        <string>--reasoning</string><string>off</string>
+        <string>--temp</string><string>0</string>
+        <string>--top-k</string><string>0</string>
+        <string>--top-p</string><string>1</string>
+        <string>--repeat-penalty</string><string>1</string>
+        <string>--cache-ram</string><string>0</string>
+        <string>--metrics</string>
+        <string>--no-ui</string>
+    </array>
+    <key>WorkingDirectory</key><string>/Users/USER/.hermes/local-models/worker-bench</string>
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>HOME</key><string>/Users/USER</string>
+        <key>PATH</key><string>/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+        <key>TMPDIR</key><string>/Users/USER/.hermes/cache/scratch</string>
+        <key>HF_HUB_OFFLINE</key><string>1</string>
+        <key>TRANSFORMERS_OFFLINE</key><string>1</string>
+        <key>HF_HUB_DISABLE_TELEMETRY</key><string>1</string>
+        <key>HF_HUB_DISABLE_IMPLICIT_TOKEN</key><string>1</string>
+    </dict>
+    <key>RunAtLoad</key><true/>
+    <key>KeepAlive</key><dict><key>SuccessfulExit</key><false/></dict>
+    <key>ThrottleInterval</key><integer>30</integer>
+    <key>StandardOutPath</key><string>/Users/USER/.hermes/logs/local-spark.out.log</string>
+    <key>StandardErrorPath</key><string>/Users/USER/.hermes/logs/local-spark.err.log</string>
+</dict>
+</plist>

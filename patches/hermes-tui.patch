@@ -279,7 +279,7 @@ index d6076fe5f7..8f65c5082d 100644
      const msg: Msg = { role: 'assistant', text: 'ok', thinking: 'line 1\nline 2', tools: ['Tool A', 'Tool B'] }
  
 diff --git a/ui-tui/src/app/createGatewayEventHandler.ts b/ui-tui/src/app/createGatewayEventHandler.ts
-index fbdbf9f5f0..40e5a9a3df 100644
+index fbdbf9f5f0..dae7ac47f3 100644
 --- a/ui-tui/src/app/createGatewayEventHandler.ts
 +++ b/ui-tui/src/app/createGatewayEventHandler.ts
 @@ -9,6 +9,7 @@ import { STARTUP_IMAGE, STARTUP_QUERY } from '../config/env.js'
@@ -311,7 +311,7 @@ index fbdbf9f5f0..40e5a9a3df 100644
  import { markNextSubmitVoice } from './submissionCore.js'
  import { captureDestination, isCurrentDestination } from './submissionDestination.js'
  import { turnController } from './turnController.js'
-+import { formatTurnStats, turnStats } from './turnStats.js'
++import { formatTurnStats, turnCost, turnStats } from './turnStats.js'
  import { getTurnState } from './turnStore.js'
  import { getUiState, patchUiState } from './uiStore.js'
  import {
@@ -371,20 +371,35 @@ index fbdbf9f5f0..40e5a9a3df 100644
        case 'status.update': {
          const p = ev.payload
  
-@@ -1767,6 +1789,12 @@ export function createGatewayEventHandler(ctx: GatewayEventHandlerContext): (ev:
+@@ -1727,6 +1749,12 @@ export function createGatewayEventHandler(ctx: GatewayEventHandlerContext): (ev:
+         // Ctrl+C sealed the reply before the agent stopped streaming: take the
+         // persisted partial so the screen shows what state.db (and the next
+         // request) holds.
++        const costing = turnCost.settle(
++          (method, params) => gw.request(method, params),
++          ev.session_id,
++          (ev.payload as { admission_id?: unknown } | undefined)?.admission_id
++        )
++
+         if (interruptedReply?.from === null) {
+           appendMessage({ role: 'assistant', text: interruptedReply.to })
+         } else if (interruptedReply) {
+@@ -1767,6 +1795,14 @@ export function createGatewayEventHandler(ctx: GatewayEventHandlerContext): (ev:
  
            msgs.forEach(appendMessage)
  
 +          const stats = turnStats.finish(Date.now(), ev.payload?.usage ?? undefined)
 +
 +          if (stats && !failed) {
-+            appendMessage({ kind: 'stats', role: 'system', text: formatTurnStats(stats) })
++            void costing.then(costUsd =>
++              appendMessage({ kind: 'stats', role: 'system', text: formatTurnStats({ ...stats, costUsd }) })
++            )
 +          }
 +
            // Pet beat: celebrate a finished plan, otherwise a clean-finish wave.
            flashPet(isTodoDone(getTurnState().todos) ? 'jump' : 'wave')
  
-@@ -1775,6 +1803,10 @@ export function createGatewayEventHandler(ctx: GatewayEventHandlerContext): (ev:
+@@ -1775,6 +1811,10 @@ export function createGatewayEventHandler(ctx: GatewayEventHandlerContext): (ev:
            }
          }
  
@@ -1049,10 +1064,10 @@ index 9105a71da2..cbacfaa608 100644
  }
 diff --git a/ui-tui/src/__tests__/turnStats.test.tsx b/ui-tui/src/__tests__/turnStats.test.tsx
 new file mode 100644
-index 0000000000..4688ef4797
+index 0000000000..16c0294d53
 --- /dev/null
 +++ b/ui-tui/src/__tests__/turnStats.test.tsx
-@@ -0,0 +1,119 @@
+@@ -0,0 +1,156 @@
 +import { PassThrough } from 'node:stream'
 +
 +import { renderSync } from '@hermes/ink'
@@ -1061,7 +1076,7 @@ index 0000000000..4688ef4797
 +import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 +
 +import { patchOverlayState, resetOverlayState } from '../app/overlayStore.js'
-+import { formatTurnStats, TurnStats, turnStats } from '../app/turnStats.js'
++import { formatTurnStats, TurnCost, TurnStats, turnStats } from '../app/turnStats.js'
 +import { MessageLine } from '../components/messageLine.js'
 +import { DEFAULT_THEME } from '../theme.js'
 +
@@ -1137,7 +1152,44 @@ index 0000000000..4688ef4797
 +  })
 +})
 +
++describe('TurnCost', () => {
++  const receipts = (costs: Record<string, unknown>) => (_method: string, params: Record<string, unknown>) =>
++    Promise.resolve({ result: { estimated_cost_usd: costs[params.admission_id as string] } })
++
++  it('prices a turn as the growth of the cumulative cost since the previous completion', async () => {
++    const cost = new TurnCost()
++    const request = receipts({ a: 8.25, b: 8.75, c: 9.0 })
++    expect(await cost.settle(request, 's', 'a')).toBeNull()
++    expect(await cost.settle(request, 's', 'b')).toBeCloseTo(0.5)
++    expect(await cost.settle(request, 's', 'c')).toBeCloseTo(0.25)
++  })
++
++  it('keeps sessions apart and treats a reset counter as the whole turn', async () => {
++    const cost = new TurnCost()
++    const request = receipts({ a: 5, b: 1, x: 2, y: 2.5 })
++    await cost.settle(request, 's', 'a')
++    await cost.settle(request, 'other', 'x')
++    expect(await cost.settle(request, 's', 'b')).toBe(1)
++    expect(await cost.settle(request, 'other', 'y')).toBeCloseTo(0.5)
++  })
++
++  it('gives no cost when the receipt fails, lacks a cost or never answers', async () => {
++    const cost = new TurnCost(20)
++    expect(await cost.settle(() => Promise.reject(new Error('down')), 's', 'a')).toBeNull()
++    expect(await cost.settle(receipts({}), 's', 'a')).toBeNull()
++    expect(await cost.settle(() => new Promise(() => {}), 's', 'a')).toBeNull()
++    expect(await cost.settle(receipts({ a: 1 }), 's', undefined)).toBeNull()
++  })
++})
++
 +describe('formatTurnStats', () => {
++  it('appends the estimated cost', () => {
++    expect(formatTurnStats({ activeMs: 9_000, costUsd: 0.0912, modelTps: null, taskTps: null, totalMs: 9_000, waitMs: 0 }))
++      .toBe('⏱ 9s · ≈$0.091')
++    expect(formatTurnStats({ activeMs: 9_000, costUsd: 1.234, modelTps: 72, taskTps: 38, totalMs: 9_000, waitMs: 0 }))
++      .toBe('⏱ 9s · 38 tok/s (model 72 tok/s) · ≈$1.23')
++  })
++
 +  it('shows the time without waiting first and the full time in brackets', () => {
 +    expect(formatTurnStats({ activeMs: 252_000, modelTps: 72.4, taskTps: 38.2, totalMs: 400_000, waitMs: 148_000 }))
 +      .toBe('⏱ 4m 12s (6m 40s with waiting) · 38 tok/s (model 72 tok/s)')
@@ -1174,10 +1226,10 @@ index 0000000000..4688ef4797
 +})
 diff --git a/ui-tui/src/app/turnStats.ts b/ui-tui/src/app/turnStats.ts
 new file mode 100644
-index 0000000000..f51472b525
+index 0000000000..21c73d1b94
 --- /dev/null
 +++ b/ui-tui/src/app/turnStats.ts
-@@ -0,0 +1,95 @@
+@@ -0,0 +1,151 @@
 +import type { Usage } from '@hermes/shared/gateway-events'
 +
 +import { fmtDuration } from '../domain/messages.js'
@@ -1187,6 +1239,7 @@ index 0000000000..f51472b525
 +
 +export interface TurnStatsResult {
 +  activeMs: number
++  costUsd?: null | number
 +  modelTps: null | number
 +  taskTps: null | number
 +  totalMs: number
@@ -1259,9 +1312,63 @@ index 0000000000..f51472b525
 +  turnStats.observePrompt(Boolean(state.clarify || state.approval || state.sudo || state.secret), Date.now())
 +})
 +
++type Request = (method: string, params: Record<string, unknown>) => Promise<unknown>
++
++const RECEIPT_TIMEOUT_MS = 2000
++
++/**
++ * The cost of one turn: each committed turn result (`prompt.receipt include_result`) carries the
++ * agent's cumulative `estimated_cost_usd`, so a turn costs the difference to the previous result of
++ * the same session. Every completion, owned or not, moves the baseline.
++ */
++export class TurnCost {
++  private readonly cumulative = new Map<string, number>()
++
++  constructor(private readonly timeoutMs = RECEIPT_TIMEOUT_MS) {}
++
++  async settle(request: Request, sid: null | string | undefined, admissionId: unknown): Promise<null | number> {
++    if (!sid || typeof admissionId !== 'string' || !admissionId) {
++      return null
++    }
++
++    const total = await this.readTotal(request, sid, admissionId)
++
++    if (total === null) {
++      return null
++    }
++
++    const previous = this.cumulative.get(sid)
++    this.cumulative.set(sid, total)
++
++    if (previous === undefined) {
++      return null
++    }
++
++    // A rebuilt agent restarts its counter at zero: everything it holds is this turn's.
++    return total >= previous ? total - previous : total
++  }
++
++  private async readTotal(request: Request, sid: string, admissionId: string): Promise<null | number> {
++    const timeout = new Promise<null>(resolve => setTimeout(() => resolve(null), this.timeoutMs))
++    const receipt = request('prompt.receipt', { admission_id: admissionId, include_result: true, session_id: sid })
++      .then(raw => {
++        const cost = (raw as { result?: { estimated_cost_usd?: unknown } } | null)?.result?.estimated_cost_usd
++
++        return typeof cost === 'number' && Number.isFinite(cost) ? cost : null
++      })
++      .catch(() => null)
++
++    return Promise.race([receipt, timeout])
++  }
++}
++
++export const turnCost = new TurnCost()
++
++const usd = (value: number) => `≈$${value < 0.1 ? value.toFixed(3) : value.toFixed(2)}`
++
 +const tps = (value: number) => (value >= 10 ? String(Math.round(value)) : value.toFixed(1))
 +
-+/** `⏱ 4m 12s (6m 40s with waiting) · 38 tok/s (model 72 tok/s)`; empty parts are left out. */
++/** `⏱ 4m 12s (6m 40s with waiting) · 38 tok/s (model 72 tok/s) · ≈$0.09`; empty parts are left out. */
 +export function formatTurnStats(stats: TurnStatsResult): string {
 +  const time = stats.waitMs >= 1000
 +    ? `${fmtDuration(stats.activeMs)} (${t('status.turnWithWait', fmtDuration(stats.totalMs))})`
@@ -1270,8 +1377,9 @@ index 0000000000..f51472b525
 +    stats.taskTps === null ? '' : `${tps(stats.taskTps)} tok/s`,
 +    stats.modelTps === null ? '' : `(${t('status.turnModelTps', tps(stats.modelTps))})`
 +  ].filter(Boolean).join(' ')
++  const cost = typeof stats.costUsd === 'number' ? usd(stats.costUsd) : ''
 +
-+  return speed ? `⏱ ${time} · ${speed}` : `⏱ ${time}`
++  return ['⏱ ' + time, speed, cost].filter(Boolean).join(' · ')
 +}
 diff --git a/ui-tui/src/__tests__/activityStatus.test.ts b/ui-tui/src/__tests__/activityStatus.test.ts
 new file mode 100644

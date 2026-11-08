@@ -12,14 +12,16 @@ index f9897c96cc..4bf2a976f1 100644
  
  
 diff --git a/locales/ru.tui.yaml b/locales/ru.tui.yaml
-index e02416bf67..b1250dc4e2 100644
+index bc101e5290..1f3d5c9416 100644
 --- a/locales/ru.tui.yaml
 +++ b/locales/ru.tui.yaml
-@@ -1212,6 +1212,7 @@ status.fast: "fast"
+@@ -1181,6 +1181,9 @@ status.fast: "fast"
  status.mcpReloaded: "MCP перезагружен после изменения конфигурации"
  status.paused: "⏸ пауза"
  status.ready: "готов"
 +status.copied: "скопировано"
++status.turnWithWait: "{0} с ожиданием"
++status.turnModelTps: "модель {0} tok/s"
  status.resumesWhenSubagentFinishes: "↩ продолжит, когда завершится подагент"
  status.resumesWhenSubagentsFinish: "↩ продолжит, когда завершатся подагенты ({0})"
  status.running: "выполняется…"
@@ -277,10 +279,10 @@ index d6076fe5f7..8f65c5082d 100644
      const msg: Msg = { role: 'assistant', text: 'ok', thinking: 'line 1\nline 2', tools: ['Tool A', 'Tool B'] }
  
 diff --git a/ui-tui/src/app/createGatewayEventHandler.ts b/ui-tui/src/app/createGatewayEventHandler.ts
-index c435d29b02..51925adb37 100644
+index fbdbf9f5f0..40e5a9a3df 100644
 --- a/ui-tui/src/app/createGatewayEventHandler.ts
 +++ b/ui-tui/src/app/createGatewayEventHandler.ts
-@@ -10,6 +10,7 @@ import { STARTUP_IMAGE, STARTUP_QUERY } from '../config/env.js'
+@@ -9,6 +9,7 @@ import { STARTUP_IMAGE, STARTUP_QUERY } from '../config/env.js'
  import { STREAM_BATCH_MS } from '../config/timing.js'
  import { buildSetupRequiredSections, setupRequiredTitle } from '../content/setup.js'
  import { usageFromTick } from '../domain/usage.js'
@@ -288,7 +290,7 @@ index c435d29b02..51925adb37 100644
  import type {
    AnyGatewayEvent,
    ConfigFullResponse,
-@@ -30,6 +31,7 @@ import { bootSeededPin, invalidateBootBackground, writeBootTheme } from '../lib/
+@@ -29,6 +30,7 @@ import { bootSeededPin, invalidateBootBackground, writeBootTheme } from '../lib/
  import { defaultThemeForCurrentBackground, fromSkin, skinIsLight, type Theme, themeToneHex } from '../theme.js'
  import type { Msg, SessionInfo, SubagentProgress } from '../types.js'
  
@@ -296,7 +298,7 @@ index c435d29b02..51925adb37 100644
  import { applyConnectionRequest, applyConnectionUpdate } from './connectionOperationStore.js'
  import { applyDelegationStatus, getDelegationState } from './delegationStore.js'
  import { createBillingVerificationPresenter, createFreeTierChallengePresenter } from './gatewayBrowserLinks.js'
-@@ -44,7 +46,7 @@ import { reportGatewayStartTimeout } from './gatewayStartTimeout.js'
+@@ -43,7 +45,7 @@ import { reportGatewayStartTimeout } from './gatewayStartTimeout.js'
  import type { GatewayEventHandlerContext, NoticeLevel } from './interfaces.js'
  import { applyControlSnapshot } from './loopStatus.js'
  import { getOverlayState, patchOverlayState, SENSITIVE_PROMPTS } from './overlayStore.js'
@@ -305,7 +307,15 @@ index c435d29b02..51925adb37 100644
  import { flashGoodVibes, flashPet } from './petFlashStore.js'
  import { forgetServerRequest } from './serverRequestStore.js'
  import { noteCanonicalCompletion } from './slash/canonicalSessionCommands.js'
-@@ -189,7 +191,14 @@ const themesEqual = (a: Theme, b: Theme) => {
+@@ -53,6 +55,7 @@ import { reportStartupLatency } from './startupLatency.js'
+ import { markNextSubmitVoice } from './submissionCore.js'
+ import { captureDestination, isCurrentDestination } from './submissionDestination.js'
+ import { turnController } from './turnController.js'
++import { formatTurnStats, turnStats } from './turnStats.js'
+ import { getTurnState } from './turnStore.js'
+ import { getUiState, patchUiState } from './uiStore.js'
+ import {
+@@ -184,7 +187,14 @@ const themesEqual = (a: Theme, b: Theme) => {
    }
  
    return (
@@ -320,7 +330,7 @@ index c435d29b02..51925adb37 100644
      a.brand.prompt === b.brand.prompt &&
      a.bannerLogo === b.bannerLogo &&
      a.bannerHero === b.bannerHero
-@@ -661,7 +670,8 @@ function applySessionInfo(payload: unknown, { appendMessage, setHistoryItems, se
+@@ -656,7 +666,8 @@ function applySessionInfo(payload: unknown, { appendMessage, setHistoryItems, se
    // authority starts it, so it lands after the previous assistant reply.
    for (const started of newlyStartedRows(current?.pending_submissions, incoming.pending_submissions)) {
      markBubbleShown(started.input_id)
@@ -330,7 +340,7 @@ index c435d29b02..51925adb37 100644
    }
  
    // A replayed snapshot can be the only terminal signal after reconnect.
-@@ -1198,6 +1208,8 @@ export function createGatewayEventHandler(ctx: GatewayEventHandlerContext): (ev:
+@@ -1090,6 +1101,8 @@ export function createGatewayEventHandler(ctx: GatewayEventHandlerContext): (ev:
        return
      }
  
@@ -339,7 +349,7 @@ index c435d29b02..51925adb37 100644
      switch (ev.type) {
        case 'connection.request':
          if (ev.payload) {
-@@ -1286,11 +1298,20 @@ export function createGatewayEventHandler(ctx: GatewayEventHandlerContext): (ev:
+@@ -1178,11 +1191,20 @@ export function createGatewayEventHandler(ctx: GatewayEventHandlerContext): (ev:
  
          return
  
@@ -361,6 +371,30 @@ index c435d29b02..51925adb37 100644
        case 'status.update': {
          const p = ev.payload
  
+@@ -1767,6 +1789,12 @@ export function createGatewayEventHandler(ctx: GatewayEventHandlerContext): (ev:
+ 
+           msgs.forEach(appendMessage)
+ 
++          const stats = turnStats.finish(Date.now(), ev.payload?.usage ?? undefined)
++
++          if (stats && !failed) {
++            appendMessage({ kind: 'stats', role: 'system', text: formatTurnStats(stats) })
++          }
++
+           // Pet beat: celebrate a finished plan, otherwise a clean-finish wave.
+           flashPet(isTodoDone(getTurnState().todos) ? 'jump' : 'wave')
+ 
+@@ -1775,6 +1803,10 @@ export function createGatewayEventHandler(ctx: GatewayEventHandlerContext): (ev:
+           }
+         }
+ 
++        if (wasInterrupted) {
++          turnStats.cancel()
++        }
++
+         setStatus('ready')
+ 
+         if (ev.payload?.warning) {
 diff --git a/ui-tui/src/app/interfaces.ts b/ui-tui/src/app/interfaces.ts
 index ea2370665b..0b6599fd9b 100644
 --- a/ui-tui/src/app/interfaces.ts
@@ -600,7 +634,7 @@ index 1abd583824..d6bce13646 100644
            {!overlay.agents && !overlay.journey && <AmbientRail side="left" />}
            {overlay.agents ? (
 diff --git a/ui-tui/src/components/messageLine.tsx b/ui-tui/src/components/messageLine.tsx
-index def92f2185..cfb08b7470 100644
+index 135448153f..1633d6f5b9 100644
 --- a/ui-tui/src/components/messageLine.tsx
 +++ b/ui-tui/src/components/messageLine.tsx
 @@ -8,6 +8,7 @@ import { hasLeadGap } from '../domain/blockLayout.js'
@@ -611,7 +645,7 @@ index def92f2185..cfb08b7470 100644
  import { ROLE } from '../domain/roles.js'
  import { useT } from '../i18n/useT.js'
  import { transcriptBodyWidth, transcriptGutterWidth } from '../lib/inputMetrics.js'
-@@ -79,12 +80,26 @@ export const MessageLine = memo(function MessageLine({
+@@ -78,12 +79,26 @@ export const MessageLine = memo(function MessageLine({
    // block that renders nothing — e.g. a tool trail hidden by /details — emits
    // no floating gap. Streaming-safe: the gap is derived from the stable
    // predecessor, never this block's own live content. See domain/blockLayout.
@@ -639,7 +673,24 @@ index def92f2185..cfb08b7470 100644
    if (msg.kind === 'trail' && msg.todos?.length) {
      return (
        <TodoPanel
-@@ -152,7 +167,7 @@ export const MessageLine = memo(function MessageLine({
+@@ -145,13 +160,24 @@ export const MessageLine = memo(function MessageLine({
+     )
+   }
+ 
++  // Per-turn timing and speed: one bright-green line on black after the final reply.
++  if (msg.kind === 'stats') {
++    return (
++      <Box marginBottom={compact ? 0 : 1}>
++        <Text backgroundColor="#000000" bold color="#00ff00">
++          {` ${msg.text} `}
++        </Text>
++      </Box>
++    )
++  }
++
+   // Timeline events (model switches, delegation completions) render as
+   // dim ◈ markers with no gutter — not as opaque user messages.
+   if (msg.kind === 'event') {
      const eventGutterWidth = transcriptGutterWidth('system', t.brand.prompt)
  
      return (
@@ -648,7 +699,7 @@ index def92f2185..cfb08b7470 100644
          <NoSelect flexShrink={0} fromLeftEdge width={eventGutterWidth}>
            <Text> </Text>
          </NoSelect>
-@@ -272,12 +287,13 @@ export const MessageLine = memo(function MessageLine({
+@@ -264,12 +290,13 @@ export const MessageLine = memo(function MessageLine({
  
    return (
      <Box
@@ -663,7 +714,7 @@ index def92f2185..cfb08b7470 100644
            <ToolTrail
              commandOverride={detailsModeCommandOverride}
              detailsMode={detailsMode}
-@@ -294,7 +310,7 @@ export const MessageLine = memo(function MessageLine({
+@@ -286,7 +313,7 @@ export const MessageLine = memo(function MessageLine({
        )}
  
        {showResponseSeparator && (
@@ -805,19 +856,21 @@ index 9af6ac3eae..cb63e2a434 100644
      }
    }
 diff --git a/ui-tui/src/i18n/en/chrome.ts b/ui-tui/src/i18n/en/chrome.ts
-index c06f9df630..bbd0d52812 100644
+index c06f9df630..4e040c021b 100644
 --- a/ui-tui/src/i18n/en/chrome.ts
 +++ b/ui-tui/src/i18n/en/chrome.ts
-@@ -4,6 +4,7 @@
+@@ -4,6 +4,9 @@
  
  export const chromeEn = {
    status: {
 +    copied: 'copied',
++    turnWithWait: (duration: string) => `${duration} with waiting`,
++    turnModelTps: (tps: string) => `model ${tps} tok/s`,
      summoning: 'summoning hermes…',
      ready: 'ready',
      running: 'running…',
 diff --git a/ui-tui/src/lib/virtualHeights.ts b/ui-tui/src/lib/virtualHeights.ts
-index cf1ebd95d7..c5dc8bb29f 100644
+index cf1ebd95d7..4afb956fc2 100644
 --- a/ui-tui/src/lib/virtualHeights.ts
 +++ b/ui-tui/src/lib/virtualHeights.ts
 @@ -1,4 +1,5 @@
@@ -826,7 +879,7 @@ index cf1ebd95d7..c5dc8bb29f 100644
  import type { Msg } from '../types.js'
  
  import { transcriptBodyWidth } from './inputMetrics.js'
-@@ -93,6 +94,10 @@ export const estimatedMsgHeight = (
+@@ -93,6 +94,14 @@ export const estimatedMsgHeight = (
      return msg.info?.version ? 9 : 5
    }
  
@@ -834,10 +887,14 @@ index cf1ebd95d7..c5dc8bb29f 100644
 +    return 1
 +  }
 +
++  if (msg.kind === 'stats') {
++    return 1
++  }
++
    if (msg.kind === 'panel') {
      return Math.max(3, (msg.panelData?.sections.length ?? 1) * 2 + 1)
    }
-@@ -129,7 +134,7 @@ export const estimatedMsgHeight = (
+@@ -129,7 +138,7 @@ export const estimatedMsgHeight = (
          (hasVisibleThinking ? (thinkingExpanded ? wrappedLines(msg.thinking ?? '', bodyWidth) : 1) : 0)
  
        if (msg.role === 'assistant' && /\S/.test(msg.text)) {
@@ -846,7 +903,7 @@ index cf1ebd95d7..c5dc8bb29f 100644
        }
      }
    }
-@@ -147,7 +152,7 @@ export const estimatedMsgHeight = (
+@@ -147,7 +156,7 @@ export const estimatedMsgHeight = (
    // the previous row (see domain/blockLayout.ts::hasLeadGap) and passes the
    // result here so the estimate matches the rendered marginTop before Yoga
    // remeasures. user / diff / slash never set this — they own their margins.
@@ -906,7 +963,7 @@ index 4122a623d7..6f7cb58d26 100644
          icon: d.brand.icon,
          prompt: cleanPromptSymbol(branding.prompt_symbol, d.brand.prompt),
 diff --git a/ui-tui/src/types.ts b/ui-tui/src/types.ts
-index 97c52b8825..cbb2290393 100644
+index 97c52b8825..00e63fc0e8 100644
 --- a/ui-tui/src/types.ts
 +++ b/ui-tui/src/types.ts
 @@ -136,7 +136,8 @@ export interface ClarifyReq {
@@ -915,7 +972,7 @@ index 97c52b8825..cbb2290393 100644
    info?: SessionInfo
 -  kind?: 'diff' | 'event' | 'intro' | 'panel' | 'slash' | 'trail'
 +  notificationTitle?: string
-+  kind?: 'diff' | 'event' | 'intro' | 'notification' | 'panel' | 'slash' | 'trail'
++  kind?: 'diff' | 'event' | 'intro' | 'notification' | 'panel' | 'slash' | 'stats' | 'trail'
    panelData?: PanelData
    role: Role
    text: string
@@ -970,6 +1027,252 @@ index ff8c29ebcd..7efead27e6 100644
    it('keeps bare local POSIX LF-compatible prompts submitting on Ctrl+J', () => {
      expect(shouldPreserveCtrlJNewline({ TERM: 'xterm-256color' })).toBe(false)
    })
+diff --git a/ui-tui/src/app/submissionCore.ts b/ui-tui/src/app/submissionCore.ts
+index 9105a71da2..cbacfaa608 100644
+--- a/ui-tui/src/app/submissionCore.ts
++++ b/ui-tui/src/app/submissionCore.ts
+@@ -12,6 +12,7 @@ import { markBubbleShown } from './pendingBubbles.js'
+ import { retireCanonicalControls } from './slash/canonicalSessionControls.js'
+ import { captureDestination, isCurrentDestination, type SubmissionDestination } from './submissionDestination.js'
+ import { turnController } from './turnController.js'
++import { turnStats } from './turnStats.js'
+ import { getUiState, patchUiState } from './uiStore.js'
+ 
+ const SESSION_BUSY_RE = /session busy|waiting for model response/i
+@@ -88,6 +89,7 @@ function beginOwnedTurn(
+   }
+ 
+   patchUiState({ busy: true, status: 'running…' })
++  turnStats.begin(Date.now(), getUiState().usage)
+   turnController.bufRef = ''
+   turnController.interrupted = false
+ }
+diff --git a/ui-tui/src/__tests__/turnStats.test.tsx b/ui-tui/src/__tests__/turnStats.test.tsx
+new file mode 100644
+index 0000000000..4688ef4797
+--- /dev/null
++++ b/ui-tui/src/__tests__/turnStats.test.tsx
+@@ -0,0 +1,119 @@
++import { PassThrough } from 'node:stream'
++
++import { renderSync } from '@hermes/ink'
++import chalk from 'chalk'
++import React from 'react'
++import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
++
++import { patchOverlayState, resetOverlayState } from '../app/overlayStore.js'
++import { formatTurnStats, TurnStats, turnStats } from '../app/turnStats.js'
++import { MessageLine } from '../components/messageLine.js'
++import { DEFAULT_THEME } from '../theme.js'
++
++vi.mock('../app/gatewayContext.js', () => ({ useGateway: () => ({ gw: null }) }))
++
++const usage = (output: number, avg_tps?: number) => ({ calls: 1, input: 0, output, total: output, avg_tps })
++
++describe('TurnStats', () => {
++  it('times a turn from submit to the final reply and averages its output tokens', () => {
++    const stats = new TurnStats()
++    stats.begin(1_000, usage(500))
++    const result = stats.finish(11_000, usage(900, 72))
++
++    expect(result).toEqual({ activeMs: 10_000, modelTps: 72, taskTps: 40, totalMs: 10_000, waitMs: 0 })
++  })
++
++  it('subtracts every span the user spent answering prompts', () => {
++    const stats = new TurnStats()
++    stats.begin(0, usage(0))
++    stats.observePrompt(true, 2_000)
++    stats.observePrompt(true, 3_000)
++    stats.observePrompt(false, 5_000)
++    stats.observePrompt(true, 8_000)
++    stats.observePrompt(false, 9_000)
++    const result = stats.finish(12_000, usage(180))
++
++    expect(result).toMatchObject({ activeMs: 8_000, totalMs: 12_000, waitMs: 4_000 })
++    expect(result?.taskTps).toBeCloseTo(22.5)
++  })
++
++  it('closes a prompt still open when the turn ends', () => {
++    const stats = new TurnStats()
++    stats.begin(0, usage(0))
++    stats.observePrompt(true, 1_000)
++
++    expect(stats.finish(4_000, usage(0))).toMatchObject({ activeMs: 1_000, taskTps: null, waitMs: 3_000 })
++  })
++
++  it('reports nothing without a started turn, and nothing twice', () => {
++    const stats = new TurnStats()
++    expect(stats.finish(1_000, usage(10))).toBeNull()
++    stats.begin(0, usage(0))
++    stats.observePrompt(true, 100)
++    stats.cancel()
++    expect(stats.finish(1_000, usage(10))).toBeNull()
++    stats.begin(0, usage(0))
++    stats.finish(1_000, usage(10))
++    expect(stats.finish(2_000, usage(20))).toBeNull()
++  })
++
++  it('ignores prompts that open outside a turn', () => {
++    const stats = new TurnStats()
++    stats.observePrompt(true, 0)
++    stats.begin(5_000, usage(0))
++    expect(stats.finish(6_000, usage(0))).toMatchObject({ waitMs: 0 })
++  })
++
++  it('counts an open clarify overlay as waiting', () => {
++    vi.useFakeTimers()
++
++    try {
++      vi.setSystemTime(0)
++      turnStats.begin(0, usage(0))
++      vi.setSystemTime(1_000)
++      patchOverlayState({ clarify: { answers: [], questions: [], requestId: 'r' } as never })
++      vi.setSystemTime(6_000)
++      resetOverlayState()
++
++      expect(turnStats.finish(7_000, usage(0))).toMatchObject({ waitMs: 5_000 })
++    } finally {
++      vi.useRealTimers()
++    }
++  })
++})
++
++describe('formatTurnStats', () => {
++  it('shows the time without waiting first and the full time in brackets', () => {
++    expect(formatTurnStats({ activeMs: 252_000, modelTps: 72.4, taskTps: 38.2, totalMs: 400_000, waitMs: 148_000 }))
++      .toBe('⏱ 4m 12s (6m 40s with waiting) · 38 tok/s (model 72 tok/s)')
++  })
++
++  it('drops the brackets when nobody waited and the speeds that are unknown', () => {
++    expect(formatTurnStats({ activeMs: 9_000, modelTps: null, taskTps: 4.25, totalMs: 9_000, waitMs: 0 }))
++      .toBe('⏱ 9s · 4.3 tok/s')
++    expect(formatTurnStats({ activeMs: 9_000, modelTps: null, taskTps: null, totalMs: 9_000, waitMs: 0 })).toBe('⏱ 9s')
++  })
++})
++
++describe('stats row', () => {
++  const level = chalk.level
++  beforeEach(() => { chalk.level = 3 })
++  afterEach(() => { chalk.level = level })
++
++  it('paints bright green text on black', () => {
++    const stdout = Object.assign(new PassThrough(), { columns: 60, isTTY: false, rows: 10 })
++    const stdin = Object.assign(new PassThrough(), { isTTY: true, isRaw: false, ref: vi.fn(), unref: vi.fn(), setRawMode: vi.fn() })
++    let output = ''
++    stdout.on('data', chunk => { output += chunk.toString() })
++    const view = renderSync(
++      <MessageLine cols={60} msg={{ kind: 'stats', role: 'system', text: '⏱ 9s · 4.3 tok/s' }} t={DEFAULT_THEME} />,
++      { patchConsole: false, stderr: new PassThrough() as never, stdin: stdin as never, stdout: stdout as never }
++    )
++    view.unmount()
++    view.cleanup()
++
++    expect(output).toContain('⏱ 9s · 4.3 tok/s')
++    expect(output).toMatch(/\x1b\[(?:[0-9;]*;)?38;2;0;255;0m/)
++    expect(output).toMatch(/\x1b\[(?:[0-9;]*;)?48;2;0;0;0m/)
++  })
++})
+diff --git a/ui-tui/src/app/turnStats.ts b/ui-tui/src/app/turnStats.ts
+new file mode 100644
+index 0000000000..f51472b525
+--- /dev/null
++++ b/ui-tui/src/app/turnStats.ts
+@@ -0,0 +1,95 @@
++import type { Usage } from '@hermes/shared/gateway-events'
++
++import { fmtDuration } from '../domain/messages.js'
++import { t } from '../i18n/runtime.js'
++
++import { $overlayState } from './overlayStore.js'
++
++export interface TurnStatsResult {
++  activeMs: number
++  modelTps: null | number
++  taskTps: null | number
++  totalMs: number
++  waitMs: number
++}
++
++/**
++ * Times one owned turn: from the Enter that submitted it to its final reply,
++ * minus the spans the user spent answering a prompt (clarify, approval, sudo,
++ * secret), plus the output tokens the turn produced.
++ */
++export class TurnStats {
++  private startedAt: null | number = null
++  private outputBefore = 0
++  private waitMs = 0
++  private promptSince: null | number = null
++
++  begin(now: number, usage: Usage): void {
++    this.startedAt = now
++    this.outputBefore = usage.output ?? 0
++    this.waitMs = 0
++    this.promptSince = null
++  }
++
++  observePrompt(open: boolean, now: number): void {
++    if (this.startedAt === null) {
++      return
++    }
++
++    if (open && this.promptSince === null) {
++      this.promptSince = now
++    } else if (!open && this.promptSince !== null) {
++      this.waitMs += now - this.promptSince
++      this.promptSince = null
++    }
++  }
++
++  cancel(): void {
++    this.startedAt = null
++    this.promptSince = null
++  }
++
++  finish(now: number, usage: Usage | undefined): null | TurnStatsResult {
++    if (this.startedAt === null) {
++      return null
++    }
++
++    this.observePrompt(false, now)
++    const totalMs = Math.max(0, now - this.startedAt)
++    const activeMs = Math.max(0, totalMs - this.waitMs)
++    const output = usage?.output
++    const tokens = typeof output === 'number' ? output - this.outputBefore : 0
++    const result: TurnStatsResult = {
++      activeMs,
++      modelTps: typeof usage?.avg_tps === 'number' && usage.avg_tps > 0 ? usage.avg_tps : null,
++      taskTps: tokens > 0 && activeMs > 0 ? tokens / (activeMs / 1000) : null,
++      totalMs,
++      waitMs: this.waitMs
++    }
++
++    this.cancel()
++
++    return result
++  }
++}
++
++export const turnStats = new TurnStats()
++
++$overlayState.listen(state => {
++  turnStats.observePrompt(Boolean(state.clarify || state.approval || state.sudo || state.secret), Date.now())
++})
++
++const tps = (value: number) => (value >= 10 ? String(Math.round(value)) : value.toFixed(1))
++
++/** `⏱ 4m 12s (6m 40s with waiting) · 38 tok/s (model 72 tok/s)`; empty parts are left out. */
++export function formatTurnStats(stats: TurnStatsResult): string {
++  const time = stats.waitMs >= 1000
++    ? `${fmtDuration(stats.activeMs)} (${t('status.turnWithWait', fmtDuration(stats.totalMs))})`
++    : fmtDuration(stats.totalMs)
++  const speed = [
++    stats.taskTps === null ? '' : `${tps(stats.taskTps)} tok/s`,
++    stats.modelTps === null ? '' : `(${t('status.turnModelTps', tps(stats.modelTps))})`
++  ].filter(Boolean).join(' ')
++
++  return speed ? `⏱ ${time} · ${speed}` : `⏱ ${time}`
++}
 diff --git a/ui-tui/src/__tests__/activityStatus.test.ts b/ui-tui/src/__tests__/activityStatus.test.ts
 new file mode 100644
 index 0000000000..8b01c54210

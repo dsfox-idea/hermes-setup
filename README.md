@@ -7,7 +7,7 @@ source checkout, and rebuilds it after each `hermes update`.
 | Part | What you get |
 | --- | --- |
 | Skin (`skins/dsfox-skin.yaml`) | Muted green ANSI-256 palette, high-contrast diffs, `DSFOX-AGENT` wordmark |
-| TUI patch (`patches/hermes-tui.patch`) | Chat canvas `#1c1c1c`, black user messages and composer, compact transcript, themed choice cards, `activity` status indicator with elapsed-time colors, copy confirmation on mouse selection |
+| TUI patch (`patches/hermes-tui.patch`) | Chat canvas `#1c1c1c`, black user messages and composer, compact transcript, themed choice cards, `activity` status indicator with elapsed-time colors, copy confirmation on mouse selection, a bright-green stats line after each final reply (time without and with waiting for your answers, tokens/s for the task and for the model) |
 | Optional | Extended `hermes-agent` skill notes |
 
 Without the patch the skin still applies colors and branding; the canvas,

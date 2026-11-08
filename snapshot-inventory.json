@@ -4,7 +4,7 @@
       "sha256": "e2ae7d3eca7ad7a66369adb6cdfcd15827406d85bcd527553feea8c684fe7f58"
     },
     "patches/hermes-tui.patch": {
-      "sha256": "ebdb5b5ddce9b89270024490520336137fa65e620ea032af60790e7db2546369"
+      "sha256": "933077cd2664b0f69099bf87ba64e4fe90f382af8230f5c5545f378426a6b3eb"
     },
     "plugins/honcho/.gitignore": {
       "sha256": "4cad133d4f0a6cf4bba15f1b8bbae48d6a55f20b94f75487c51a93cc6a5af59f"

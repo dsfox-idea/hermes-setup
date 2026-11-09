@@ -1,10 +1,10 @@
 {
   "files": {
     "config.example.json": {
-      "sha256": "e2ae7d3eca7ad7a66369adb6cdfcd15827406d85bcd527553feea8c684fe7f58"
+      "sha256": "aeb1914e6e56c584fd6499a3d378bdca4beb7b2a07d36e7cd52a0d63ecfa106d"
     },
     "patches/hermes-tui.patch": {
-      "sha256": "137a658905465119449e1dd73c920eb071503f281832e8fa4ff8303be0b65947"
+      "sha256": "10d388d84f91701b76350b1c9b0b5db1850504154ce586966dbb01ba6618db61"
     },
     "plugins/honcho/.gitignore": {
       "sha256": "4cad133d4f0a6cf4bba15f1b8bbae48d6a55f20b94f75487c51a93cc6a5af59f"
@@ -76,7 +76,7 @@
       "sha256": "904059718e3dcb6963ef54abb0a8f83ef667f4395b3b438e3892b945ccfe6d03"
     },
     "skills/autonomous-ai-agents/heretic/SKILL.md": {
-      "sha256": "dcc080fbcbf80da8c819e0336686bece86d4156342c86d2fc577418d3aeea2a7"
+      "sha256": "50c49d800e13b024e6949409c33f9e23d30c49ee29f75089dc8585809e6400ed"
     },
     "skills/autonomous-ai-agents/heretic/scripts/request.py": {
       "sha256": "9db4a0e52e67e31d77477e64f8f06095c19c594abfd32fa68e6bae0113af00db"
@@ -85,13 +85,13 @@
       "sha256": "365a6206b387ae0f46b39d5a732a0b78a00f3c203701f56c9b09eae1a35d9736"
     },
     "skills/autonomous-ai-agents/hermes-agent/SKILL.md": {
-      "sha256": "2a17519d85cb25dc134987d38df3c0a6a162b9876f393e7c1c03fed364cfe382"
+      "sha256": "00fdfd2529b026778d9e902331d65513e1d9ae29fd0a1cd955145f68eac13867"
     },
     "skills/autonomous-ai-agents/hermes-agent/references/a2a-peering.md": {
-      "sha256": "ebfb6bfbec630b0424d35396d2e1672039fca01d643a41fafebba1bfb690661b"
+      "sha256": "3ac6a684ce8e8416a4fddce588afc02d07f871d032688e41eed2cc5359f858be"
     },
     "skills/autonomous-ai-agents/hermes-agent/references/a2a-peers.md": {
-      "sha256": "6dbb946063ab73c20503033f59b7794ae02bdc255f3039aab7354926a1bef165"
+      "sha256": "1add8c902fbddcd2663852bbc4bbd8eb689c1c619b67619789da76bd393a0e53"
     },
     "skills/autonomous-ai-agents/hermes-agent/references/activity-status.md": {
       "sha256": "903f091c11e54c08043e4475dcd8089dbacb8bd25fbf42a83a3d29b1e24b62ea"
@@ -127,10 +127,10 @@
       "sha256": "1122a7be8c8bc28db4cbfdde1fb84ef85892a17b2e1e99adf9074538a6ad654d"
     },
     "skills/autonomous-ai-agents/hermes-agent/references/migrate-from-claude-code.md": {
-      "sha256": "6adf399812b32e82c7a0d199c6cedbfc62a664eb9cc21b00042ea23632298dea"
+      "sha256": "20fa64ab11cbc3990570ffab28dc459bdb31f8db69dba34a5f6682dae701c4d2"
     },
     "skills/autonomous-ai-agents/hermes-agent/references/native-mcp.md": {
-      "sha256": "7b7c27ae255b3c9d360611d60019f6cf61e71c7d70f23a1c781f1686eecc2ab4"
+      "sha256": "0325d3c88be6dfe8a6c9375e6693c82d136bd7f25ae0ad1163ef7b0d9df5d2a1"
     },
     "skills/autonomous-ai-agents/hermes-agent/references/petdex.md": {
       "sha256": "2254eabf40c360efb54e4df482f3b84820b54a15e6954c4a7e9e7fee4eb90f77"
@@ -154,7 +154,7 @@
       "sha256": "beb426e350e251048d3054a15544ed905e4f0464a44121afd27719ef1d39212f"
     },
     "skills/autonomous-ai-agents/hermes-agent/references/themes.md": {
-      "sha256": "6187ba1793e1a0e0e86c62afcb8637f96a334d2554d52dac20ec0d06d1f8282f"
+      "sha256": "b5f198c0d309c9b67e65e289d29b12760605af3d1f4bacfca6d327e00cf955f6"
     },
     "skills/autonomous-ai-agents/hermes-agent/references/troubleshooting.md": {
       "sha256": "5a8bc728c1fc2519960c3bd3e2a5e1f2e2da6afc04bb7c9457a1ea5d38065179"
@@ -166,7 +166,7 @@
       "sha256": "f668c57d1900e249cb4b54e5d624e9aacb399ecf1452f9b258a1bf857ffa8a42"
     },
     "skills/autonomous-ai-agents/hermes-agent/references/windows-quirks.md": {
-      "sha256": "1011d4441ab79c1416d53123493159938ab25d546baf87f56639eb47d1ef2d35"
+      "sha256": "89bfd70729ebed5773f13702306904101c7a3f823fad12e9f9c798c1b91cf6da"
     },
     "skills/autonomous-ai-agents/hermes-agent/scripts/tailscale-safe-up.sh": {
       "sha256": "c3c3c17b180ab3ba54b527b7e5eba58ab7a53fcfc19a755b4ed33c674418b5e1"
@@ -181,7 +181,7 @@
       "sha256": "bc8fddd7e5373b074c1c7dd423bb59d6e04769977e8a18354e3a6b3983209994"
     },
     "skills/autonomous-ai-agents/local-spark/SKILL.md": {
-      "sha256": "f686bad9396fcbfb427cf7f6a3ad9ade2c4fc209e46ffada009b1048bf57da45"
+      "sha256": "e65152ebce072b6be56577f9f808ad1cc5214bbc5e5cea918cdf7354c2ab4f19"
     },
     "skills/autonomous-ai-agents/local-spark/scripts/spark_call.py": {
       "sha256": "db6be553eccac82b9494ac620d78008cbdb6a111103920d1e0b4cc12ebcf017e"
@@ -205,7 +205,7 @@
       "sha256": "05e7d8e506189f2cd8b9b96d56fa4e2d7e0c4d46eddac3cafe16052a350b26da"
     },
     "upstream.json": {
-      "sha256": "926ef20c43452eefeacb83aa242f74c9387357cf566f5e14a33ca064cd1ed02d"
+      "sha256": "47488a0ba79121bf05d544757c8fc4c789bd5f014789d5da87fe369c02f8b4c3"
     }
   },
   "format": 2

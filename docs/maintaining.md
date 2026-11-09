@@ -5,14 +5,15 @@ covered in the top-level `README.md`.
 
 ## Refresh the snapshot
 
-`scripts/snapshot.py` exports the non-secret parts of a live profile (skin, TUI
-patch, skills, configuration example, Honcho plugin) into this tree. Personal
-rules (`SOUL.md`), memory notes and skill references that describe one owner's
-machines are never exported (`PRIVATE_SKILL_FILES` in `snapshot.py`).
+`scripts/snapshot.py` exports a profile's skin, TUI patch, skills, configuration
+example and Honcho plugin. Use a reviewed public-only profile and a separately
+reconstructed public source checkout. Do not export a mixed working profile:
+filename exclusions such as `PRIVATE_SKILL_FILES` cannot establish that the
+remaining source, skill text or configuration contains no private material.
 
 ```sh
-python3 -I scripts/snapshot.py          # write
-python3 -I scripts/snapshot.py --check  # exit 1 when the tree is stale
+python3 -I scripts/snapshot.py --profile /path/to/public-profile --source /path/to/patched-source
+python3 -I scripts/snapshot.py --profile /path/to/public-profile --source /path/to/patched-source --check
 ```
 
 The inventory (`snapshot-inventory.json`) lists the files the exporter owns.
@@ -21,12 +22,30 @@ edited or unmanaged files are never removed silently.
 
 ## Change the TUI patch
 
-1. Make the change in a scratch `git clone --shared` of a Hermes checkout, never in
-   the checkout Hermes runs from.
-2. In `ui-tui`: `npm run typecheck` and the relevant `vitest` files.
-3. Export with `git diff > patches/hermes-tui.patch` and update the checksum in
-   `upstream.json`.
-4. Rebuild locally with `scripts/setup.py install` and open a new TUI window.
+1. Reconstruct the currently published patch on the pinned Hermes revision in a
+   scratch source checkout. A shared source clone is acceptable for local builds;
+   the publication repository must have independent object storage.
+2. Apply only reviewed generic changes. Preserve newer public functionality and
+   exclude unrelated additions from mixed local files.
+3. In `ui-tui`, prepare dependencies with `npm ci`, then run `npm run build:ink`,
+   `npm run typecheck`, the relevant `vitest` files and `npm run build`. Compare
+   full-suite failures with the exact public baseline in a separate checkout.
+4. Export with the explicit snapshot commands above. The exporter includes new
+   untracked source files and refreshes both the patch checksum and inventory;
+   a plain `git diff` omits untracked tests and modules.
+5. Check patch application and the overlay build against an untouched pinned
+   source in disposable state before installation. Live installation is a
+   separate step: `scripts/setup.py install` updates every discovered profile.
+   Do not use it to verify a build while unrelated live sessions must stay intact.
+
+## Publication history boundary
+
+The current remote `main` is the publication baseline. When old local history has
+no common ancestor with it, create an independent clone directly from that remote
+and port reviewed changes as new commits. Do not fetch or merge the old history
+into that clone, use a linked worktree as isolation, or force-push the old branch.
+Keep working runtime paths and unrelated local edits intact. Block outgoing pushes
+from retired publication copies with a local refusal hook and disabled push URL.
 
 ## Publish
 
@@ -44,7 +63,9 @@ paths, account names) that must not appear in the pushed tree.
 
 ```sh
 git config --local publication.denyList /path/outside/the/repo/deny.txt
-``` It needs `gh` (authenticated), `gitleaks` and `python3` on `PATH`.
+```
+
+It needs `gh` (authenticated), `gitleaks` and `python3` on `PATH`.
 
 | Platform | Notes |
 | --- | --- |
@@ -56,12 +77,20 @@ Never commit credentials, OAuth grants, `.env` files, databases, memories, chats
 or logs. A failed push is reported as failed; check the remote with
 `git ls-remote origin refs/heads/main` before calling it published.
 
-`scripts/local_publication_guard.py` is an optional extra gate driven by a local
-policy file outside the repository (`localPublication.required`,
-`localPublication.guard`, `localPublication.policy` in the local git config).
+On machines containing private development history, require the additional
+`scripts/local_publication_guard.py` gate. Its policy stays outside this tree and
+checks all reachable commits, paths, file content and known private object IDs.
+Include retired history roots in `deny_commits`; keep identifying strings and
+fingerprints in that local policy, never in the public repository.
+
+```sh
+git config --local localPublication.required true
+git config --local localPublication.guard /path/to/public-checkout/scripts/local_publication_guard.py
+git config --local localPublication.policy /path/outside/the/repo/policy.json
+```
 
 ## Tests
 
 ```sh
-cd scripts && python3 -m unittest test_setup test_snapshot_configuration test_local_publication_guard
+cd scripts && python3 -m unittest test_setup test_snapshot_configuration test_local_publication_guard test_tui_overlay
 ```

@@ -261,7 +261,7 @@ index f1977fa415..670b2bb858 100644
  
    it('composer tokens and transcript trail prose follow the active catalog', () => {
 diff --git a/ui-tui/src/__tests__/messages.test.ts b/ui-tui/src/__tests__/messages.test.ts
-index 0e3c04b70d..ff8e29bc38 100644
+index 0e3c04b70d..5dd89f617f 100644
 --- a/ui-tui/src/__tests__/messages.test.ts
 +++ b/ui-tui/src/__tests__/messages.test.ts
 @@ -5,9 +5,10 @@ import { stripAnsi } from '@hermes/shared/ansi'
@@ -316,7 +316,7 @@ index 0e3c04b70d..ff8e29bc38 100644
  
  describe('display.timestamps (#41531)', () => {
 -  it('formats a Unix-seconds timestamp as [HH:MM] and rejects garbage', () => {
-+  it('formats a Unix-seconds timestamp with milliseconds and rejects garbage', () => {
++  it('formats a Unix-seconds timestamp without fractional digits and rejects garbage', () => {
      const noon = new Date()
      noon.setHours(13, 5, 0, 0)
  
@@ -324,7 +324,7 @@ index 0e3c04b70d..ff8e29bc38 100644
 -    expect(fmtMsgTimestamp(undefined)).toBeNull()
 -    expect(fmtMsgTimestamp(0)).toBeNull()
 -    expect(fmtMsgTimestamp(Number.NaN)).toBeNull()
-+    expect(EventTime.format(noon.getTime() / 1000)).toBe('13:05:00.000')
++    expect(EventTime.format(noon.getTime() / 1000)).toBe('13:05:00')
 +    expect(EventTime.format(undefined)).toBeNull()
 +    expect(EventTime.format(0)).toBeNull()
 +    expect(EventTime.format(Number.NaN)).toBeNull()
@@ -332,7 +332,7 @@ index 0e3c04b70d..ff8e29bc38 100644
  
    it('threads persisted transcript timestamps onto rehydrated rows', () => {
 diff --git a/ui-tui/src/__tests__/termuxComposerLayout.test.ts b/ui-tui/src/__tests__/termuxComposerLayout.test.ts
-index e11bb62e3a..819e74cc04 100644
+index e11bb62e3a..779a24f7a1 100644
 --- a/ui-tui/src/__tests__/termuxComposerLayout.test.ts
 +++ b/ui-tui/src/__tests__/termuxComposerLayout.test.ts
 @@ -24,13 +24,13 @@ describe('Termux composer prompt + width guards', () => {
@@ -341,8 +341,8 @@ index e11bb62e3a..819e74cc04 100644
      // Old behavior hard-minned to 20 columns and overflowed narrow layouts.
 -    expect(transcriptBodyWidth(24, 'assistant', '>', true)).toBe(19)
 -    expect(transcriptBodyWidth(24, 'user', 'upstr >', true)).toBe(14)
-+    expect(transcriptBodyWidth(24, 'assistant', '>', true)).toBe(6)
-+    expect(transcriptBodyWidth(24, 'user', 'upstr >', true)).toBe(1)
++    expect(transcriptBodyWidth(24, 'assistant', '>', true)).toBe(10)
++    expect(transcriptBodyWidth(24, 'user', 'upstr >', true)).toBe(5)
      expect(transcriptBodyWidth(10, 'user', '>', true)).toBeGreaterThanOrEqual(1)
    })
  
@@ -350,8 +350,8 @@ index e11bb62e3a..819e74cc04 100644
 -    expect(transcriptBodyWidth(24, 'assistant', '>')).toBe(20)
 -    expect(transcriptBodyWidth(24, 'user', 'upstr >')).toBe(20)
 +  it('reserves the timestamp gutter without overflowing narrow desktop panes', () => {
-+    expect(transcriptBodyWidth(24, 'assistant', '>')).toBe(4)
-+    expect(transcriptBodyWidth(24, 'user', 'upstr >')).toBe(1)
++    expect(transcriptBodyWidth(24, 'assistant', '>')).toBe(8)
++    expect(transcriptBodyWidth(24, 'user', 'upstr >')).toBe(3)
    })
  })
 diff --git a/ui-tui/src/__tests__/textInputPassThrough.test.ts b/ui-tui/src/__tests__/textInputPassThrough.test.ts
@@ -411,7 +411,7 @@ index 81dfa63221..7c70de789b 100644
      ])
    })
 diff --git a/ui-tui/src/__tests__/virtualHeights.test.ts b/ui-tui/src/__tests__/virtualHeights.test.ts
-index d6076fe5f7..39e25ba88b 100644
+index d6076fe5f7..ca112dc17c 100644
 --- a/ui-tui/src/__tests__/virtualHeights.test.ts
 +++ b/ui-tui/src/__tests__/virtualHeights.test.ts
 @@ -18,13 +18,11 @@ describe('virtual height estimates', () => {
@@ -426,8 +426,8 @@ index d6076fe5f7..39e25ba88b 100644
  
 -    expect(estimatedMsgHeight(msg, 30, { compact: false, details: false, userPrompt: '❯' })).toBe(3)
 -    expect(estimatedMsgHeight(msg, 30, { compact: false, details: false, userPrompt: 'Ψ >' })).toBe(4)
-+    expect(estimatedMsgHeight(msg, 43, { compact: false, details: false, userPrompt: '❯' })).toBe(3)
-+    expect(estimatedMsgHeight(msg, 43, { compact: false, details: false, userPrompt: 'Ψ >' })).toBe(4)
++    expect(estimatedMsgHeight(msg, 39, { compact: false, details: false, userPrompt: '❯' })).toBe(3)
++    expect(estimatedMsgHeight(msg, 39, { compact: false, details: false, userPrompt: 'Ψ >' })).toBe(4)
    })
  
    it('adds one row for a group-boundary lead gap', () => {
@@ -1691,10 +1691,18 @@ index 4f36dff1c0..c0c1344e21 100644
        })}
  
 diff --git a/ui-tui/src/components/streamingAssistant.tsx b/ui-tui/src/components/streamingAssistant.tsx
-index 2cf259a959..cd7e1fdb66 100644
+index 2cf259a959..d3449da59a 100644
 --- a/ui-tui/src/components/streamingAssistant.tsx
 +++ b/ui-tui/src/components/streamingAssistant.tsx
-@@ -33,6 +33,8 @@ export const StreamingAssistant = memo(function StreamingAssistant({
+@@ -10,6 +10,7 @@ import type { ActiveTool, DetailsMode, Msg, SectionVisibility } from '../types.j
+ 
+ import { MessageLine } from './messageLine.js'
+ import { TodoPanel } from './todoPanel.js'
++import { WorkingClock } from './workingClock.js'
+ 
+ const groupedSegments = (segments: Msg[]): Msg[] =>
+   segments.reduce<Msg[]>((acc, msg) => appendToolShelfMessage(acc, msg), [])
+@@ -33,11 +34,13 @@ export const StreamingAssistant = memo(function StreamingAssistant({
    const ui = useStore($uiState)
    const streamSegments = useTurnSelector(state => state.streamSegments)
    const streamPendingTools = useTurnSelector(state => state.streamPendingTools)
@@ -1703,7 +1711,13 @@ index 2cf259a959..cd7e1fdb66 100644
    const streaming = useTurnSelector(state => state.streaming)
    const activeTools = useTurnSelector(state => state.tools)
    const showStreamingArea = Boolean(streaming)
-@@ -56,10 +58,10 @@ export const StreamingAssistant = memo(function StreamingAssistant({
+ 
+-  if (!progress.showProgressArea && !showStreamingArea && !activeTools.length) {
++  if (!ui.busy && !progress.showProgressArea && !showStreamingArea && !activeTools.length) {
+     return null
+   }
+ 
+@@ -56,10 +59,10 @@ export const StreamingAssistant = memo(function StreamingAssistant({
      blocks.push({
        isStreaming: true,
        key: 'streaming',
@@ -1716,6 +1730,14 @@ index 2cf259a959..cd7e1fdb66 100644
    }
  
    const detailsCtx = { commandOverride: detailsModeCommandOverride, detailsMode, sections }
+@@ -97,6 +100,7 @@ export const StreamingAssistant = memo(function StreamingAssistant({
+ 
+         return node
+       })}
++      <WorkingClock />
+     </>
+   )
+ })
 diff --git a/ui-tui/src/components/textInput.tsx b/ui-tui/src/components/textInput.tsx
 index daca6ae643..ee41039309 100644
 --- a/ui-tui/src/components/textInput.tsx
@@ -3359,7 +3381,7 @@ index 0000000000..55143ea6c1
 +})
 diff --git a/ui-tui/src/__tests__/eventTimestampColor.test.tsx b/ui-tui/src/__tests__/eventTimestampColor.test.tsx
 new file mode 100644
-index 0000000000..44a44afe6f
+index 0000000000..a46506cca7
 --- /dev/null
 +++ b/ui-tui/src/__tests__/eventTimestampColor.test.tsx
 @@ -0,0 +1,132 @@
@@ -3461,7 +3483,7 @@ index 0000000000..44a44afe6f
 +          t={fixture.theme}
 +        />
 +      )
-+      .find(span => span.text.includes('14:07:32.084'))
++      .find(span => span.text.includes('14:07:32'))
 +
 +    expect(reference).toBeDefined()
 +    expect(timestamp?.style.fg).toEqual(reference.style.fg)
@@ -3486,7 +3508,7 @@ index 0000000000..44a44afe6f
 +      />
 +    )
 +
-+    const timestamp = spans.find(span => span.text.includes('14:07:32.084'))
++    const timestamp = spans.find(span => span.text.includes('14:07:32'))
 +    const question = spans.find(span => span.text.includes('QUESTION_MARKER'))
 +
 +    expect(timestamp?.style.fg).toEqual(reference.style.fg)
@@ -3611,10 +3633,10 @@ index 0000000000..8eacef624d
 +})
 diff --git a/ui-tui/src/__tests__/eventTimestamps.test.tsx b/ui-tui/src/__tests__/eventTimestamps.test.tsx
 new file mode 100644
-index 0000000000..2609c07703
+index 0000000000..723d557a7e
 --- /dev/null
 +++ b/ui-tui/src/__tests__/eventTimestamps.test.tsx
-@@ -0,0 +1,150 @@
+@@ -0,0 +1,151 @@
 +import { PassThrough } from 'node:stream'
 +
 +import { renderSync, stringWidth } from '@hermes/ink'
@@ -3691,7 +3713,7 @@ index 0000000000..2609c07703
 +        lines.every(line => stringWidth(line) <= columns),
 +        lines.join('\n')
 +      ).toBe(true)
-+      expect(lines.join('\n').match(/14:07:32\.084/g)).toHaveLength(1)
++      expect(lines.join('\n').match(/14:07:32/g)).toHaveLength(1)
 +    }
 +  })
 +
@@ -3704,7 +3726,7 @@ index 0000000000..2609c07703
 +      toolCreatedAt: [undefined]
 +    })
 +
-+    expect(lines.find(line => line.includes('OLD_TOOL'))).toMatch(/^--:--:--\.---\s/)
++    expect(lines.find(line => line.includes('OLD_TOOL'))).toMatch(/^--:--:--\s/)
 +  })
 +
 +  it('stamps the active question without adding stamps to its answer choices', () => {
@@ -3718,12 +3740,13 @@ index 0000000000..2609c07703
 +      <ClarifyPrompt onCancel={() => {}} onQuestionAnswer={() => {}} req={req} t={DEFAULT_THEME} />
 +    )
 +
-+    expect(lines.find(line => line.includes('QUESTION_MARKER'))).toMatch(/^14:07:32\.084\s/)
-+    expect(lines.find(line => line.includes('CHOICE_MARKER'))).not.toContain('14:07:32.084')
++    expect(lines.find(line => line.includes('QUESTION_MARKER'))).toMatch(/^14:07:32\s/)
++    expect(lines.find(line => line.includes('CHOICE_MARKER'))).not.toContain('14:07:32')
 +  })
 +
-+  it('formats local time with seconds and three millisecond digits', () => {
-+    expect(EventTime.format(createdAt)).toBe('14:07:32.084')
++  it('formats local time to seconds without rounding into the next second', () => {
++    expect(EventTime.format(createdAt)).toBe('14:07:32')
++    expect(EventTime.format(Math.floor(createdAt) + 0.9999)).toBe('14:07:32')
 +  })
 +
 +  it.each<Msg>([
@@ -3735,14 +3758,14 @@ index 0000000000..2609c07703
 +  ])('stamps a $role $kind event on its first content line without an opt-in', message => {
 +    const lines = EventScreen.render({ ...message, createdAt })
 +    const line = lines.find(value => value.includes('EVENT_MARKER'))
-+    expect(line).toMatch(/^14:07:32\.084\s+.*EVENT_MARKER/)
++    expect(line).toMatch(/^14:07:32\s+.*EVENT_MARKER/)
 +  })
 +
 +  it('does not repeat the timestamp on continuation lines', () => {
 +    const lines = EventScreen.render({ role: 'user', text: 'FIRST_LINE\nSECOND_LINE', createdAt })
-+    expect(lines.find(line => line.includes('FIRST_LINE'))).toMatch(/^14:07:32\.084\s/)
++    expect(lines.find(line => line.includes('FIRST_LINE'))).toMatch(/^14:07:32\s/)
 +    expect(lines.find(line => line.includes('SECOND_LINE'))).toMatch(/^\s+SECOND_LINE/)
-+    expect(lines.join('\n').match(/14:07:32\.084/g)).toHaveLength(1)
++    expect(lines.join('\n').match(/14:07:32/g)).toHaveLength(1)
 +  })
 +
 +  it('keeps separate times for repeated tools in a merged group', () => {
@@ -3756,13 +3779,13 @@ index 0000000000..2609c07703
 +    } as Msg
 +
 +    const lines = EventScreen.render(message)
-+    expect(lines.find(line => line.includes('FIRST_TOOL'))).toMatch(/^14:07:32\.084\s/)
-+    expect(lines.find(line => line.includes('SECOND_TOOL'))).toMatch(/^14:07:33\.209\s/)
++    expect(lines.find(line => line.includes('FIRST_TOOL'))).toMatch(/^14:07:32\s/)
++    expect(lines.find(line => line.includes('SECOND_TOOL'))).toMatch(/^14:07:33\s/)
 +  })
 +
 +  it('marks an unknown historical time instead of inventing the current time', () => {
 +    const lines = EventScreen.render({ role: 'system', text: 'OLD_EVENT' })
-+    expect(lines.find(line => line.includes('OLD_EVENT'))).toMatch(/^--:--:--\.---\s/)
++    expect(lines.find(line => line.includes('OLD_EVENT'))).toMatch(/^--:--:--\s/)
 +  })
 +})
 diff --git a/ui-tui/src/__tests__/messageSpacing.test.tsx b/ui-tui/src/__tests__/messageSpacing.test.tsx
@@ -4479,6 +4502,171 @@ index 0000000000..af7eb78794
 +    expect(fixture.message(message)).toBe(fixture.message(message, original))
 +  })
 +})
+diff --git a/ui-tui/src/__tests__/workingClock.test.tsx b/ui-tui/src/__tests__/workingClock.test.tsx
+new file mode 100644
+index 0000000000..7c82e439ea
+--- /dev/null
++++ b/ui-tui/src/__tests__/workingClock.test.tsx
+@@ -0,0 +1,159 @@
++import { PassThrough } from 'node:stream'
++
++import { Box, renderSync } from '@hermes/ink'
++import { stripAnsi } from '@hermes/shared/ansi'
++import chalk from 'chalk'
++import React from 'react'
++import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
++
++import { Parser } from '../../packages/hermes-ink/src/ink/termio.js'
++import { patchOverlayState, resetOverlayState } from '../app/overlayStore.js'
++import { patchTurnState, resetTurnState } from '../app/turnStore.js'
++import { patchUiState, resetUiState } from '../app/uiStore.js'
++import { StreamingAssistant } from '../components/streamingAssistant.js'
++import { EventTime } from '../lib/eventTime.js'
++import { fromSkin } from '../theme.js'
++
++const theme = fromSkin({ banner_dim: '#545E6B', status_bar_good: '#63D0A6' }, {})
++const cleanups: Array<() => void> = []
++const colorLevel = chalk.level
++
++class WorkingClockFixture {
++  output = ''
++  readonly view: ReturnType<typeof renderSync>
++
++  constructor(showProgressArea = true) {
++    const stdout = Object.assign(new PassThrough(), { columns: 80, isTTY: false, rows: 30 })
++
++    const stdin = Object.assign(new PassThrough(), {
++      isTTY: true, ref: () => {}, unref: () => {}, setRawMode: () => {}
++    })
++
++    stdout.on('data', chunk => { this.output += chunk.toString() })
++    this.view = renderSync(
++      <Box flexDirection="column">
++        <StreamingAssistant cols={80} compact detailsMode="expanded" detailsModeCommandOverride
++          progress={{ showProgressArea } as never} />
++      </Box>,
++      { stdout: stdout as never, stdin: stdin as never, stderr: stdout as never, patchConsole: false }
++    )
++    cleanups.push(() => { this.view.unmount(); this.view.cleanup() })
++  }
++
++  clear() { this.output = '' }
++
++  lines() {
++    return stripAnsi(this.output).split('\n').map(line => line.trimEnd()).filter(Boolean)
++  }
++
++  clocks() {
++    return new Parser().feed(this.output).filter(action => action.type === 'text')
++      .map(action => ({ text: action.graphemes.map(part => part.value).join(''), style: action.style }))
++      .filter(span => /^\d\d:\d\d:\d\d$/.test(span.text))
++  }
++}
++
++beforeEach(() => {
++  vi.useFakeTimers()
++  vi.setSystemTime(new Date(2026, 10, 9, 14, 7, 32, 0))
++  chalk.level = 2
++  resetUiState()
++  resetTurnState()
++  resetOverlayState()
++  patchUiState({ sid: 'clock-session', busy: true, theme })
++})
++afterEach(() => {
++  cleanups.splice(0).forEach(cleanup => cleanup())
++  resetOverlayState()
++  resetTurnState()
++  resetUiState()
++  chalk.level = colorLevel
++  vi.useRealTimers()
++  vi.restoreAllMocks()
++})
++
++describe('working transcript clock', () => {
++  it('ticks on one otherwise empty bright-green row before any output', async () => {
++    const fixture = new WorkingClockFixture(false)
++    expect(fixture.lines().at(-1)).toBe('14:07:32')
++    expect(fixture.clocks().at(-1)?.style.fg).toEqual({ type: 'indexed', index: 46 })
++    expect(fixture.clocks().at(-1)?.style.dim).toBe(false)
++    fixture.clear()
++    await vi.advanceTimersByTimeAsync(1000)
++    expect(fixture.lines().at(-1)).toBe('14:07:33')
++  })
++
++  it('leaves arrived events gray and advances the single green row below them', async () => {
++    const fixture = new WorkingClockFixture()
++    await vi.advanceTimersByTimeAsync(1000)
++    fixture.clear()
++    patchTurnState({ streamSegments: [{ role: 'assistant', text: 'FIRST_EVENT', createdAt: EventTime.now() }] })
++    await vi.advanceTimersByTimeAsync(50)
++    expect(fixture.lines().slice(-2)[0]).toMatch(/^14:07:33\s+.*FIRST_EVENT$/)
++    expect(fixture.lines().at(-1)).toBe('14:07:33')
++    const clocks = fixture.clocks().slice(-2)
++    expect(clocks).toHaveLength(2)
++    expect(clocks[0]?.style.fg).not.toEqual({ type: 'indexed', index: 46 })
++    expect(clocks[1]?.style.fg).toEqual({ type: 'indexed', index: 46 })
++    fixture.clear()
++    await vi.advanceTimersByTimeAsync(1000)
++    expect(fixture.lines().at(-1)).toBe('14:07:34')
++    expect(fixture.lines().slice(-2)[0]).toContain('14:07:33')
++  })
++
++  it('stops while waiting for an answer and resumes with current time', async () => {
++    const fixture = new WorkingClockFixture()
++    await vi.advanceTimersByTimeAsync(50)
++    fixture.clear()
++    patchOverlayState({ clarify: { requestId: 'question', questions: [{ qid: 'one', question: 'Question', choices: ['Yes'] }] } })
++    await vi.advanceTimersByTimeAsync(2000)
++    expect(fixture.clocks()).toEqual([])
++    fixture.clear()
++    resetOverlayState()
++    await vi.advanceTimersByTimeAsync(50)
++    expect(fixture.lines().at(-1)).toBe('14:07:34')
++  })
++
++  it('does not start a clock while idle', async () => {
++    patchUiState({ busy: false })
++    const fixture = new WorkingClockFixture()
++    await vi.advanceTimersByTimeAsync(2000)
++    expect(fixture.clocks()).toEqual([])
++  })
++
++  it('uses current time below a new event even before the next timer tick', async () => {
++    vi.setSystemTime(new Date(2026, 10, 9, 14, 7, 32, 800))
++    const fixture = new WorkingClockFixture()
++    await vi.advanceTimersByTimeAsync(250)
++    fixture.clear()
++    patchTurnState({ streamSegments: [{ role: 'assistant', text: 'NEW_EVENT', createdAt: EventTime.now() }] })
++    await vi.advanceTimersByTimeAsync(50)
++    expect(fixture.lines().slice(-2)[0]).toMatch(/^14:07:33\s+.*NEW_EVENT$/)
++    expect(fixture.lines().at(-1)).toBe('14:07:33')
++  })
++
++  it('keeps the clock below multiline streaming content without stamping continuation rows', async () => {
++    patchTurnState({ streamCreatedAt: EventTime.now(), streaming: 'FIRST_LINE\n\nCONTINUATION' })
++    const fixture = new WorkingClockFixture()
++    expect(fixture.lines().at(-1)).toBe('14:07:32')
++    expect(fixture.lines().find(line => line.includes('CONTINUATION'))).not.toMatch(/^\d\d:/)
++    expect(fixture.clocks().slice(-2).map(clock => clock.style.fg)).toEqual([
++      expect.not.objectContaining({ index: 46 }), { type: 'indexed', index: 46 }
++    ])
++  })
++
++  it('clears its ticking interval when work completes', async () => {
++    const interval = vi.spyOn(globalThis, 'setInterval')
++    const clear = vi.spyOn(globalThis, 'clearInterval')
++    const fixture = new WorkingClockFixture()
++    await vi.advanceTimersByTimeAsync(50)
++    const index = interval.mock.calls.findIndex(call => call[1] === 1000)
++    expect(index).toBeGreaterThanOrEqual(0)
++    const timer = interval.mock.results[index]?.value
++    fixture.clear()
++    patchUiState({ busy: false })
++    await vi.advanceTimersByTimeAsync(2000)
++    expect(clear).toHaveBeenCalledWith(timer)
++    expect(fixture.clocks()).toEqual([])
++  })
++})
 diff --git a/ui-tui/src/app/activityStore.ts b/ui-tui/src/app/activityStore.ts
 new file mode 100644
 index 0000000000..bc5d6c68dd
@@ -4787,10 +4975,10 @@ index 0000000000..354ec0cb42
 +}
 diff --git a/ui-tui/src/components/eventRow.tsx b/ui-tui/src/components/eventRow.tsx
 new file mode 100644
-index 0000000000..7721ccf786
+index 0000000000..6d7e9ef416
 --- /dev/null
 +++ b/ui-tui/src/components/eventRow.tsx
-@@ -0,0 +1,27 @@
+@@ -0,0 +1,28 @@
 +import { Box, NoSelect, Text } from '@hermes/ink'
 +import type { ReactNode } from 'react'
 +
@@ -4798,17 +4986,18 @@ index 0000000000..7721ccf786
 +import type { Theme } from '../theme.js'
 +
 +interface EventRowProps {
-+  children: ReactNode
++  children?: ReactNode
 +  createdAt?: number
 +  stamp?: boolean
 +  t: Theme
++  timestampColor?: string
 +}
 +
-+export function EventRow({ children, createdAt, stamp = true, t }: EventRowProps) {
++export function EventRow({ children, createdAt, stamp = true, t, timestampColor }: EventRowProps) {
 +  return (
 +    <Box>
 +      <NoSelect flexShrink={0} fromLeftEdge width={EventTime.gutterWidth}>
-+        <Text color={t.color.muted} wrap="truncate-end">
++        <Text color={timestampColor ?? t.color.muted} wrap="truncate-end">
 +          {stamp ? (EventTime.format(createdAt) ?? EventTime.unknown) : ' '}
 +        </Text>
 +      </NoSelect>
@@ -4817,6 +5006,40 @@ index 0000000000..7721ccf786
 +      </Box>
 +    </Box>
 +  )
++}
+diff --git a/ui-tui/src/components/workingClock.tsx b/ui-tui/src/components/workingClock.tsx
+new file mode 100644
+index 0000000000..73491bf531
+--- /dev/null
++++ b/ui-tui/src/components/workingClock.tsx
+@@ -0,0 +1,28 @@
++import { useStore } from '@nanostores/react'
++import { useEffect, useReducer } from 'react'
++
++import { $overlayState, hasPromptOpen } from '../app/overlayStore.js'
++import { $uiState } from '../app/uiStore.js'
++import { EventTime } from '../lib/eventTime.js'
++import type { Theme } from '../theme.js'
++
++import { EventRow } from './eventRow.js'
++
++function TickingClock({ theme }: { theme: Theme }) {
++  const [, refresh] = useReducer((tick: number) => tick + 1, 0)
++
++  useEffect(() => {
++    const timer = setInterval(refresh, 1000)
++
++    return () => clearInterval(timer)
++  }, [])
++
++  return <EventRow createdAt={EventTime.now()} t={theme} timestampColor="#00ff00" />
++}
++
++export function WorkingClock() {
++  const ui = useStore($uiState)
++  const overlay = useStore($overlayState)
++
++  return ui.busy && !hasPromptOpen(overlay) ? <TickingClock key={ui.sid} theme={ui.theme} /> : null
 +}
 diff --git a/ui-tui/src/domain/serviceNotifications.ts b/ui-tui/src/domain/serviceNotifications.ts
 new file mode 100644
@@ -4990,13 +5213,13 @@ index 0000000000..2b5f9bc75a
 +}
 diff --git a/ui-tui/src/lib/eventTime.ts b/ui-tui/src/lib/eventTime.ts
 new file mode 100644
-index 0000000000..6fdcd33bcc
+index 0000000000..3fc5b5a3d7
 --- /dev/null
 +++ b/ui-tui/src/lib/eventTime.ts
-@@ -0,0 +1,29 @@
+@@ -0,0 +1,28 @@
 +export class EventTime {
-+  static readonly gutterWidth = 13
-+  static readonly unknown = '--:--:--.---'
++  static readonly gutterWidth = 9
++  static readonly unknown = '--:--:--'
 +  // Preserve a known-unknown time through nullish live-event defaults.
 +  static readonly unavailable = 0
 +
@@ -5009,7 +5232,7 @@ index 0000000000..6fdcd33bcc
 +      return null
 +    }
 +
-+    const date = new Date(Math.round(createdAt * 1000))
++    const date = new Date(Math.floor(createdAt) * 1000)
 +
 +    if (Number.isNaN(date.getTime())) {
 +      return null
@@ -5018,8 +5241,7 @@ index 0000000000..6fdcd33bcc
 +    const hours = String(date.getHours()).padStart(2, '0')
 +    const minutes = String(date.getMinutes()).padStart(2, '0')
 +    const seconds = String(date.getSeconds()).padStart(2, '0')
-+    const milliseconds = String(date.getMilliseconds()).padStart(3, '0')
 +
-+    return `${hours}:${minutes}:${seconds}.${milliseconds}`
++    return `${hours}:${minutes}:${seconds}`
 +  }
 +}

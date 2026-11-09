@@ -8,11 +8,19 @@ archived with that turn. Cancellation, timeout, completion and failure preserve
 settled human input. Restored history flushes pending tool rows before a new
 user/system/display event and retains an unfinished tool tail.
 
-Event rows show local `HH:MM:SS.mmm` on the first content line. The timestamp is
+Event rows show local `HH:MM:SS` on the first content line, without fractional
+digits or rounding into the next second. The timestamp is
 captured at the event boundary and remains stable through redraws. Separate tool
 calls retain separate times when grouped. Missing historical times use
-`--:--:--.---`, not the replay clock. Timestamp text uses the same gray as the
+`--:--:--`, not the replay clock. Timestamp text uses the same gray as the
 main status-bar text; question and choice text retain their own palette.
+
+While the agent is working, one otherwise empty row follows the live transcript.
+Its clock is bright green (`#00ff00`, ANSI-256 index 46) and updates each second.
+New content receives its fixed gray timestamp and the green row moves beneath it.
+The clock also refreshes on content arrival, without waiting for the next timer
+tick. It disappears while awaiting a prompt answer or after completion, and its
+interval is released on unmount. It creates no persisted transcript entries.
 
 Restored in-flight text and replayed prompts without an original time retain an
 explicit unavailable-time marker. Repeated approval and clarification deliveries
@@ -34,9 +42,9 @@ isolation. No live session or profile was restarted or replaced.
 
 | Check | Result |
 | --- | --- |
-| Focused chronology, timestamps and preserved-feature tests | 88 passed |
-| Full candidate TUI suite | 1,992 passed, 3 failed, 30 skipped |
-| Full preceding public TUI suite | 1,947 passed, 3 failed, 30 skipped |
+| Focused chronology, timestamps, working clock and preserved-feature tests | 116 passed |
+| Full candidate TUI suite | 1,999 passed, 3 failed, 30 skipped |
+| Full preceding public TUI suite | 1,992 passed, 3 failed, 30 skipped |
 | Newly failing full-suite tests | 0; the failure identities match |
 | TypeScript typecheck | Passed |
 | Changed-source ESLint errors | 5 existing in both versions; 0 new |
@@ -58,6 +66,9 @@ this build check.
 - [ ] Resolve the five pre-existing import/JSX ordering errors in
   `createGatewayEventHandler.ts`, `useMainApp.ts`, `appLayout.tsx` and
   `messageLine.tsx` without mixing that cleanup into the chronology correction.
+- [ ] Investigate the intermittent 500 ms timing assertion in
+  `execFileNoThrow.test.ts`. An earlier clock-verification run exceeded it;
+  the unchanged baseline check and the final full candidate run passed it.
 
-These failures were reproduced before the port. The full suite is not reported
-as green, and unrelated source was left unchanged.
+The queue failures and ordering diagnostics were reproduced before the port.
+The full suite is not reported as green, and unrelated source was left unchanged.

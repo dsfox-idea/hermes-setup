@@ -4,7 +4,7 @@
       "sha256": "aeb1914e6e56c584fd6499a3d378bdca4beb7b2a07d36e7cd52a0d63ecfa106d"
     },
     "patches/hermes-tui.patch": {
-      "sha256": "1874579f406120202f9f97f913a228e57bcfbe194fd2cf321067cce4b161523b"
+      "sha256": "f5b0aef399f391a3929e89b12ece7516a739c06e4b7dd47874b58b83a4b9bef9"
     },
     "patches/response-review-host.patch": {
       "sha256": "27c2f7c3243de69901e2ca16a2e70b18c2c3e02712b340dba97a0aa693c658ba"
@@ -229,7 +229,7 @@
       "sha256": "05e7d8e506189f2cd8b9b96d56fa4e2d7e0c4d46eddac3cafe16052a350b26da"
     },
     "upstream.json": {
-      "sha256": "757191c004923f1d7bac83adaa3822a11c9efc254d0a3f07a523969bb4f33551"
+      "sha256": "b5ae45508d823043b38aa6e1fc0905491845a269f565552d1bf25ceee70f8712"
     }
   },
   "format": 2

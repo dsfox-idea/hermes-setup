@@ -1536,7 +1536,7 @@ index 967f269065..15f2813dd1 100644
    focusView?: boolean
    bgCount: number
 diff --git a/ui-tui/src/components/appLayout.tsx b/ui-tui/src/components/appLayout.tsx
-index 1abd583824..e57a2cfc0d 100644
+index 1abd583824..5d39fd4a86 100644
 --- a/ui-tui/src/components/appLayout.tsx
 +++ b/ui-tui/src/components/appLayout.tsx
 @@ -10,6 +10,7 @@ import type { AppLayoutProps } from '../app/interfaces.js'
@@ -1547,7 +1547,14 @@ index 1abd583824..e57a2cfc0d 100644
  import { usePet } from '../app/usePet.js'
  import { $voicePartial } from '../app/voicePartialStore.js'
  import { INLINE_MODE, NATIVE_MODE, SHOW_FPS, TERMUX_TUI_MODE } from '../config/env.js'
-@@ -32,6 +33,7 @@ import { LiveAgentsPanel } from './agentsPanel.js'
+@@ -26,12 +27,14 @@ import { PerfPane } from '../lib/perfPane.js'
+ import { composerPromptText } from '../lib/prompt.js'
+ import { sessionLabel } from '../lib/sessionLabel.js'
+ import { ActiveWidgetSlot, AmbientDock, AmbientRail, useAmbientRailWidth } from '../sdk/host.js'
++import type { Theme } from '../theme.js'
+ 
+ import { AgentsOverlay } from './agentsOverlay.js'
+ import { LiveAgentsPanel } from './agentsPanel.js'
  import { GoodVibesHeart, StatusRule, StickyPromptTracker, TranscriptScrollbar } from './appChrome.js'
  import { FloatingOverlays, PromptZone } from './appOverlays.js'
  import { Banner, Panel, SessionPanel } from './branding.js'
@@ -1555,7 +1562,7 @@ index 1abd583824..e57a2cfc0d 100644
  import { FpsOverlay } from './fpsOverlay.js'
  import { GoalBar } from './goalBar.js'
  import { HelpHint } from './helpHint.js'
-@@ -225,7 +227,9 @@ const TranscriptPane = memo(function TranscriptPane({
+@@ -225,7 +228,9 @@ const TranscriptPane = memo(function TranscriptPane({
                </Box>
              )
            ) : row.msg.kind === 'panel' && row.msg.panelData ? (
@@ -1566,7 +1573,7 @@ index 1abd583824..e57a2cfc0d 100644
            ) : (
              <MessageLine
                cols={bodyCols}
-@@ -240,7 +244,6 @@ const TranscriptPane = memo(function TranscriptPane({
+@@ -240,7 +245,6 @@ const TranscriptPane = memo(function TranscriptPane({
                })}
                sections={ui.sections}
                t={ui.theme}
@@ -1574,7 +1581,7 @@ index 1abd583824..e57a2cfc0d 100644
              />
            )}
  
-@@ -432,7 +435,7 @@ const ComposerPane = memo(function ComposerPane({
+@@ -432,7 +436,7 @@ const ComposerPane = memo(function ComposerPane({
          {!isBlocked && (
            <>
              {composer.inputBuf.map((line, i) => (
@@ -1583,7 +1590,7 @@ index 1abd583824..e57a2cfc0d 100644
                  <Box width={promptWidth}>
                    {i === 0 ? (
                      <PromptPrefix color={ui.theme.color.muted} promptText={promptText} width={promptWidth} />
-@@ -446,6 +449,7 @@ const ComposerPane = memo(function ComposerPane({
+@@ -446,6 +450,7 @@ const ComposerPane = memo(function ComposerPane({
              ))}
  
              <Box
@@ -1591,7 +1598,22 @@ index 1abd583824..e57a2cfc0d 100644
                onMouseDown={captureInputDrag}
                onMouseDrag={dragFromPromptRow}
                onMouseUp={endInputDrag}
-@@ -534,6 +538,7 @@ const StatusRulePane = memo(function StatusRulePane({
+@@ -527,6 +532,14 @@ const JourneyPane = memo(function JourneyPane() {
+   return <Journey gw={gw} onClose={() => patchOverlayState({ journey: false })} t={ui.theme} />
+ })
+ 
++export function StatusDivider({ cols, t }: { cols: number; t: Theme }) {
++  return (
++    <Text color={t.color.border} wrap="truncate-end">
++      {'─'.repeat(Math.max(1, Math.floor(cols) - 2))}
++    </Text>
++  )
++}
++
+ const StatusRulePane = memo(function StatusRulePane({
+   at,
+   composer,
+@@ -534,15 +547,20 @@ const StatusRulePane = memo(function StatusRulePane({
    status
  }: Pick<AppLayoutProps, 'composer' | 'status'> & { at: 'bottom' | 'top'; nativeMode: boolean }) {
    const ui = useStore($uiState)
@@ -1599,15 +1621,21 @@ index 1abd583824..e57a2cfc0d 100644
  
    if (ui.statusBar === 'off' || (nativeMode ? at !== 'top' : ui.statusBar !== at)) {
      return null
-@@ -543,6 +548,7 @@ const StatusRulePane = memo(function StatusRulePane({
-     <Box marginTop={at === 'top' ? 1 : 0}>
+   }
+ 
++  // A full-width divider sits directly above the status bar. In the top position it
++  // takes the row of the former blank margin, so the chrome keeps its height there.
+   return (
+-    <Box marginTop={at === 'top' ? 1 : 0}>
++    <Box flexDirection="column">
++      <StatusDivider cols={composer.cols} t={ui.theme} />
        <StatusRule
          battery={ui.battery ? ui.batteryStatus : null}
 +        clipboardCopied={clipboardCopied}
          bgCount={ui.bgTasks.size}
          busy={ui.busy}
          cols={composer.cols}
-@@ -596,7 +602,12 @@ export const AppLayout = memo(function AppLayout({
+@@ -596,7 +614,12 @@ export const AppLayout = memo(function AppLayout({
  
    return (
      <Shell {...shellProps}>
@@ -4822,6 +4850,90 @@ index 0000000000..7a2c734b1a
 +    const text = notification.replace('completed normally (exit code 0)', 'exited with exit code 2')
 +    const [message] = toTranscriptMessages([{ role: 'user', text, display_kind: 'process_complete' }])
 +    expect(serviceNotificationTitle(message!)).toContain('2')
++  })
++})
+diff --git a/ui-tui/src/__tests__/statusDivider.test.tsx b/ui-tui/src/__tests__/statusDivider.test.tsx
+new file mode 100644
+index 0000000000..702c131950
+--- /dev/null
++++ b/ui-tui/src/__tests__/statusDivider.test.tsx
+@@ -0,0 +1,78 @@
++import { PassThrough } from 'node:stream'
++
++import { renderSync } from '@hermes/ink'
++import React from 'react'
++import { afterEach, describe, expect, it, vi } from 'vitest'
++
++import type { AppLayoutProps } from '../app/interfaces.js'
++import { resetOverlayState } from '../app/overlayStore.js'
++import { patchUiState, resetUiState } from '../app/uiStore.js'
++import type { StatusBarMode } from '../app/interfaces.js'
++import { AppLayout } from '../components/appLayout.js'
++
++vi.mock('../app/gatewayContext.js', () => ({ useGateway: () => ({ gw: null }) }))
++afterEach(() => { resetOverlayState(); resetUiState() })
++
++const ANSI = /\x1b\[[0-9;?<>=]*[A-Za-z]/g
++
++function screen(statusBar: StatusBarMode, columns: number): string[] {
++  patchUiState({ sid: 'divider-fixture', statusBar })
++  const stdout = Object.assign(new PassThrough(), { columns, isTTY: false, rows: 24 })
++  const stdin = Object.assign(new PassThrough(), {
++    isTTY: true, isRaw: false, ref: vi.fn(), unref: vi.fn(), setRawMode: vi.fn()
++  })
++  const stderr = Object.assign(new PassThrough(), { isTTY: false })
++  let output = ''
++  stdout.on('data', chunk => { output += chunk.toString() })
++  const props = {
++    actions: { setStickyPrompt: vi.fn() }, mouseTracking: 'off', progress: { showProgressArea: false },
++    composer: {
++      cols: columns, input: 'DRAFTVALUE', inputBuf: [], compIdx: 0, completions: [], empty: false,
++      queuedDisplay: [], queueEditIdx: null, pagerPageSize: 10,
++      handleTextPaste: vi.fn(), submit: vi.fn(), updateInput: vi.fn(), voiceRecordKey: null
++    },
++    status: {
++      cwdLabel: 'CWDLABEL', goodVibesTick: 0, lastTurnEndedAt: null, sessionStartedAt: null,
++      sessionTitle: '', showStickyPrompt: false, statusColor: '#ffffff', stickyPrompt: '',
++      turnStartedAt: null, voiceLabel: ''
++    },
++    transcript: {
++      historyItems: [], scrollRef: { current: null }, virtualRows: [],
++      virtualHistory: { start: 0, end: 0, topSpacer: 0, bottomSpacer: 0, offsets: [] }
++    }
++  } as unknown as AppLayoutProps
++  const view = renderSync(<AppLayout {...props} />, {
++    patchConsole: false,
++    stdout: stdout as unknown as NodeJS.WriteStream,
++    stdin: stdin as unknown as NodeJS.ReadStream,
++    stderr: stderr as unknown as NodeJS.WriteStream
++  })
++  view.unmount()
++  view.cleanup()
++  return output.replace(ANSI, '').split(/\r?\n/)
++}
++
++const dividerAt = (lines: string[], index: number) => lines[index]?.trim() ?? ''
++
++describe('status bar divider', () => {
++  it.each<[StatusBarMode, number]>([['top', 40], ['top', 120], ['bottom', 40], ['bottom', 120]])(
++    'draws a full-width rule directly above the %s status bar at width %s',
++    (mode, columns) => {
++      const lines = screen(mode, columns)
++      const status = lines.findIndex(line => line.includes('CWDLABEL'))
++      expect(status).toBeGreaterThan(0)
++      expect(dividerAt(lines, status - 1)).toBe('─'.repeat(columns - 2))
++    }
++  )
++
++  it('keeps the composer adjacent to the status bar in the top position', () => {
++    const lines = screen('top', 60)
++    const status = lines.findIndex(line => line.includes('CWDLABEL'))
++    expect(lines[status + 1]).toContain('DRAFTVALUE')
++  })
++
++  it('draws nothing when the status bar is off', () => {
++    const lines = screen('off', 60)
++    expect(lines.some(line => line.includes('─'.repeat(20)))).toBe(false)
 +  })
 +})
 diff --git a/ui-tui/src/__tests__/transcriptChronology.test.ts b/ui-tui/src/__tests__/transcriptChronology.test.ts

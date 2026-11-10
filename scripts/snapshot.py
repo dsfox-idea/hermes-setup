@@ -10,6 +10,7 @@ import plistlib
 import subprocess
 import sys
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 from artifact_policy import ArtifactPolicy
 
 
@@ -18,10 +19,19 @@ class SetupSnapshot:
     # The repository is public: personal rules (SOUL.md), memory deployment notes and the
     # skill references that describe one owner's machines are never exported.
     MANAGED_FILES = {"config.example.json", "skins/dsfox-skin.yaml", "upstream.json", "patches/hermes-tui.patch"}
+    MANAGED_FILES.add("patches/response-review-host.patch")
+    HOST_PATCH_FILES = (
+        "agent/response_review.py", "agent/turn_stop_gates.py", "gateway/local_viewer_events.py",
+        "hermes_cli/plugins.py", "locales/en.yaml", "locales/ru.yaml", "tui_gateway/contracts/events.py",
+        "tui_gateway/tool_progress.py", "apps/shared/src/gateway-contract.generated.ts",
+        "apps/shared/src/gateway-contract.openrpc.json", "tests/agent/test_response_review.py",
+        "tests/gateway/test_response_review_events.py",
+    )
     MANAGED_PREFIXES = ("plugins/honcho/", "skills/autonomous-ai-agents/hermes-agent/", "skills/autonomous-ai-agents/heretic/", "skills/autonomous-ai-agents/local-spark/")
     PRIVATE_SKILL_FILES = {"references/multi-machine.md", "references/memory-providers.md",
                            "scripts/a2a-token-check.py", "scripts/honcho_recall_check.py"}
     MANAGED_PREFIXES += ("skills/creative/local-image-studio/",)
+    MANAGED_PREFIXES += ("plugins/heretic-reviewer/",)
     EXCLUDED = {
         ".git", ".venv", "__pycache__", "node_modules", "secrets",
         "credentials", "docker-config", "logs", "backups", "cache",
@@ -136,6 +146,15 @@ print(json.dumps(result, indent=2, sort_keys=True))
         for name in new_files:
             patch += self.command(["git", "diff", "--no-index", "--binary", "--", "/dev/null", name], self.source, accepted=(0, 1))
         self.add("patches/hermes-tui.patch", patch)
+        host_patch = self.command(["git", "diff", "--binary", revision, "--", *self.HOST_PATCH_FILES], self.source)
+        for name in new_files:
+            if name in self.HOST_PATCH_FILES:
+                host_patch += self.command(["git", "diff", "--no-index", "--binary", "--", "/dev/null", name], self.source, accepted=(0, 1))
+        self.add("patches/response-review-host.patch", host_patch)
+        manifest["response_review"] = {
+            "path": "patches/response-review-host.patch",
+            "patch_sha256": hashlib.sha256(host_patch).hexdigest(),
+        }
         manifest["patch"] = {
             "path": "patches/hermes-tui.patch",
             "sha256": hashlib.sha256(patch).hexdigest(),
@@ -153,6 +172,7 @@ print(json.dumps(result, indent=2, sort_keys=True))
         self.copy_tree(self.profile / "skills/autonomous-ai-agents/heretic", "skills/autonomous-ai-agents/heretic", required=False)
         self.copy_tree(self.profile / "skills/autonomous-ai-agents/local-spark", "skills/autonomous-ai-agents/local-spark", required=False)
         self.copy_tree(self.profile / "skills/creative/local-image-studio", "skills/creative/local-image-studio", required=False)
+        self.copy_tree(self.profile / "plugins/heretic-reviewer", "plugins/heretic-reviewer", required=False)
         self.source_patch()
         self.memory()
 

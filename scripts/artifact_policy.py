@@ -11,7 +11,7 @@ import sys
 class ArtifactPolicy:
     PRIVATE_DIRECTORIES = {
         ".git", ".venv", "__pycache__", "node_modules", "secrets",
-        "credentials", "sessions", "chats", "memories", "logs", "backups", "cache",
+        "credentials", "sessions", "chats", "memories", "logs", "backups", "cache", "evaluation-runs",
     }
     PRIVATE_FILES = {
         "auth.json", "honcho.json", "gateway-runtime.json", "gateway.env",

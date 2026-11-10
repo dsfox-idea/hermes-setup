@@ -6,6 +6,7 @@
 /hermes-agent/
 .hermes-clone-*/
 logs/
+evaluation-runs/
 .DS_Store
 /config.yaml
 __pycache__/

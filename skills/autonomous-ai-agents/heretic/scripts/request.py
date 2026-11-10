@@ -55,7 +55,8 @@ class HereticRequest:
     def count_tokens(cls, home, payload):
         environment = {key: value for key, value in os.environ.items()
                        if key in {"HOME", "PATH", "LANG", "LC_ALL", "TMPDIR", "HERMES_HOME"}}
-        environment.update(HF_HUB_OFFLINE="1", TRANSFORMERS_OFFLINE="1", HF_HUB_DISABLE_IMPLICIT_TOKEN="1")
+        environment.update(HERMES_HOME=str(home), HF_HUB_OFFLINE="1", TRANSFORMERS_OFFLINE="1",
+                           HF_HUB_DISABLE_IMPLICIT_TOKEN="1")
         result = subprocess.run(
             [str(home / "local-models/venv/bin/python"), "-I", str(Path(__file__).resolve()), "--token-count"],
             input=json.dumps(payload), capture_output=True, text=True, env=environment, timeout=30, check=True,

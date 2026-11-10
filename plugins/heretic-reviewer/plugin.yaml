@@ -1,0 +1,9 @@
+name: heretic-reviewer
+version: 0.1.1
+description: "Independent answer-only local reviews before substantive task completion."
+provides_hooks:
+  - pre_llm_call
+  - post_tool_call
+  - pre_response
+  - on_session_end
+  - on_session_reset

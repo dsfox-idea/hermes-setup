@@ -3,11 +3,21 @@
 import unittest
 from unittest.mock import patch
 import copy
+from pathlib import Path
+import subprocess
 
 from request import HereticRequest
 
 
 class RequestTests(unittest.TestCase):
+    def test_tokenizer_uses_the_requested_profile_home(self):
+        completed = subprocess.CompletedProcess([], 0, stdout='{"input_tokens": 1}')
+        with patch.dict("os.environ", {"HERMES_HOME": "/launch-profile"}), patch(
+            "request.subprocess.run", return_value=completed
+        ) as child:
+            HereticRequest.count_tokens(Path("/served-profile"), {})
+        self.assertEqual(child.call_args.kwargs["env"]["HERMES_HOME"], "/served-profile")
+
     def test_response_is_verbatim_and_failures_are_not_answers(self):
 
         response = {"choices": [{"finish_reason": "stop", "message": {

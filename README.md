@@ -1,14 +1,18 @@
 # hermes-setup
 
-A Hermes Agent customization: the `dsfox-skin` theme plus a patched terminal UI.
-One script installs it into every Hermes profile without modifying the Hermes
-source checkout, and rebuilds it after each `hermes update`.
+A Hermes Agent customization: the `dsfox-skin` theme, a patched terminal UI,
+optional independent response review, and capability-evaluation preparation tools.
+The default installer installs the visual customization without modifying the
+Hermes source checkout and rebuilds it after each `hermes update`. The optional
+reviewer has a separate explicit host-patch step; evaluation runs only on request.
 
 | Part | What you get |
 | --- | --- |
 | Skin (`skins/dsfox-skin.yaml`) | Muted green ANSI-256 palette, high-contrast diffs, `DSFOX-AGENT` wordmark |
 | TUI patch (`patches/hermes-tui.patch`) | Chat canvas `#1c1c1c`, black user messages and composer, compact transcript, themed choice cards, `activity` status indicator with elapsed-time colors, copy confirmation on mouse selection, a bright-green stats line after each final reply (time without and with waiting for your answers, tokens/s for the task and for the model, estimated cost `≈$` at API prices) |
-| Optional | Extended `hermes-agent` skill notes |
+| Optional skill notes | Extended `hermes-agent` skill notes |
+| Optional response review | Local Heretic review, separate attributed output, independent primary-agent assessment; see [response review](docs/response-review.md) |
+| Capability evaluation (preparation stage) | Metadata inventory, synthetic comparison inputs and typed outcome checks; no automatic model runs, rankings or archival; see [capability evaluation](docs/capability-evaluation.md) |
 
 Without the patch the skin still applies colors and branding; the canvas,
 message backgrounds, choice cards and `activity` indicator need the patch.
@@ -131,6 +135,9 @@ the hook. Backups from `--skill` stay in `<profile>/backups/`.
 | `hooks/tui-overlay/` | Gateway hook that rebuilds the TUI after updates |
 | `config.example.json` | Non-secret configuration example; set single keys with `hermes config set`, never copy it over a profile |
 | `upstream.json` | Hermes revision the patch was cut from, and the patch checksum |
+| `plugins/heretic-reviewer/`, `scripts/install_review.py` | Explicit, single-profile installation of local response review |
+| `patches/response-review-host.patch` | Optional Python-host support; unlike the default TUI overlay, applying this modifies the selected source checkout |
+| `scripts/skill_evaluation.py`, `scripts/prepare_skill_trials.py`, `evaluations/skill-selection/` | Portable capability inventory and preparation-only evaluation inputs |
 | `skills/` | Skill snapshots, including optional local-model skills |
 | `models/`, `plugins/honcho/` | Reference material for optional local models and the Honcho memory plugin; read their own README before use |
 | `docs/maintaining.md` | Updating and publishing this repository |

@@ -4,7 +4,31 @@
       "sha256": "aeb1914e6e56c584fd6499a3d378bdca4beb7b2a07d36e7cd52a0d63ecfa106d"
     },
     "patches/hermes-tui.patch": {
-      "sha256": "cd9906672c88ff988f031686d07bc1aa143db5493ae039e1cc9dd20f43dac4f2"
+      "sha256": "1874579f406120202f9f97f913a228e57bcfbe194fd2cf321067cce4b161523b"
+    },
+    "patches/response-review-host.patch": {
+      "sha256": "27c2f7c3243de69901e2ca16a2e70b18c2c3e02712b340dba97a0aa693c658ba"
+    },
+    "plugins/heretic-reviewer/README.md": {
+      "sha256": "f2f49f867582032b5e5c109ce46524ec7590c29d467937ebdcf2c7222fdee833"
+    },
+    "plugins/heretic-reviewer/__init__.py": {
+      "sha256": "49b6e90eb3d9d71bc60cba1caa23d00d4c2ecfb0c180001b466315fac40698a9"
+    },
+    "plugins/heretic-reviewer/plugin.yaml": {
+      "sha256": "8aa3d4dc7f8a199a772b5b99a24669eff9a205f6d9039ed4d766d1058f16f712"
+    },
+    "plugins/heretic-reviewer/reviewer.py": {
+      "sha256": "501b9ca0dcff1e80117a7ca8331d2d7ed893fc88ed37cd72dde9dac48e22c0f6"
+    },
+    "plugins/heretic-reviewer/runtime.py": {
+      "sha256": "57fa17ab21176c45b3b896a8fb458b4fd2ec8d9d887e071f8f2218264a0d6f5f"
+    },
+    "plugins/heretic-reviewer/tests/test_reviewer.py": {
+      "sha256": "8a1ff8d77a5cdab968829e2b1d956c8b154c5325bdc25fc6bdefa603a704f667"
+    },
+    "plugins/heretic-reviewer/tests/test_runtime.py": {
+      "sha256": "d09806e0f2d785ab685b8d1dd3227090b7b5592f26e7665682d6623c67d3c06d"
     },
     "plugins/honcho/.gitignore": {
       "sha256": "4cad133d4f0a6cf4bba15f1b8bbae48d6a55f20b94f75487c51a93cc6a5af59f"
@@ -79,10 +103,10 @@
       "sha256": "50c49d800e13b024e6949409c33f9e23d30c49ee29f75089dc8585809e6400ed"
     },
     "skills/autonomous-ai-agents/heretic/scripts/request.py": {
-      "sha256": "9db4a0e52e67e31d77477e64f8f06095c19c594abfd32fa68e6bae0113af00db"
+      "sha256": "75bb0b332856a4d8312077bb518995443826e95981ede8ebe189d317921ffaa4"
     },
     "skills/autonomous-ai-agents/heretic/scripts/test_request.py": {
-      "sha256": "365a6206b387ae0f46b39d5a732a0b78a00f3c203701f56c9b09eae1a35d9736"
+      "sha256": "8cdd16ad4ef8f0891e451603840c3a44faf00be42bfc77f668165ec7ee35584b"
     },
     "skills/autonomous-ai-agents/hermes-agent/SKILL.md": {
       "sha256": "00fdfd2529b026778d9e902331d65513e1d9ae29fd0a1cd955145f68eac13867"
@@ -205,7 +229,7 @@
       "sha256": "05e7d8e506189f2cd8b9b96d56fa4e2d7e0c4d46eddac3cafe16052a350b26da"
     },
     "upstream.json": {
-      "sha256": "3703fdb19cc9ce34ea37e17dfad6aac2cd77484c6f581926775d2835671af042"
+      "sha256": "757191c004923f1d7bac83adaa3822a11c9efc254d0a3f07a523969bb4f33551"
     }
   },
   "format": 2

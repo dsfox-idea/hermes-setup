@@ -38,6 +38,25 @@ edited or unmanaged files are never removed silently.
    separate step: `scripts/setup.py install` updates every discovered profile.
    Do not use it to verify a build while unrelated live sessions must stay intact.
 
+## Optional components
+
+Response review and capability-evaluation preparation are maintained public
+components of this project. Publish their generic code, tests and documentation;
+never include live prompts, reviews, account inventories or assessment results.
+Keep optional activation separate from the default theme installation.
+
+The snapshot exporter derives `patches/response-review-host.patch` from the
+reviewed source's explicit host file set and records its checksum in
+`upstream.json`. It also exports the optional reviewer package and the shared
+Heretic request helper. Keep the host patch, full TUI patch and tests in sync.
+Preserve newer public behavior when transplanting a feature from a mixed tree.
+
+The evaluation fixture generator and metadata support are bundled source,
+not dependencies on a maintainer's private benchmark directory or installed
+skills. Generated data belongs in ignored `evaluation-runs/` or another private
+location; the publication path gate refuses `evaluation-runs/` even if staged.
+Do not portray preparation checks as model results or an installed scoring service.
+
 ## Publication history boundary
 
 The current remote `main` is the publication baseline. When old local history has
@@ -94,3 +113,18 @@ git config --local localPublication.policy /path/outside/the/repo/policy.json
 ```sh
 cd scripts && python3 -m unittest test_setup test_snapshot_configuration test_local_publication_guard test_tui_overlay
 ```
+
+Optional-component checks (no model requests):
+
+```sh
+python3 -m unittest discover -s scripts -p 'test_*.py'
+hermes --run-module unittest discover -s plugins/heretic-reviewer/tests -v
+python3 -m unittest discover -s skills/autonomous-ai-agents/heretic/scripts -p 'test_*.py'
+```
+
+For isolated source testing, use the native `scripts/run_tests.sh` and its
+supported test environment. Preload `hermes_bootstrap` with pytest's `-p` option
+when importing an uninstalled scratch checkout would otherwise bootstrap after
+the home-I/O guard is active; keep the guard enabled. Set the subprocess scratch
+environment explicitly and keep dependency preparation disabled during offline
+checks. Run TUI typechecking, review/transcript tests and the existing stats tests.

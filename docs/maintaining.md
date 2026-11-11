@@ -131,6 +131,7 @@ Optional-component checks (no model requests):
 python3 -m unittest discover -s scripts -p 'test_*.py'
 hermes --run-module unittest discover -s plugins/heretic-reviewer/tests -v
 hermes --run-module unittest discover -s plugins/refusal-retry/tests -v
+python3 -m unittest discover -s plugins/repo-guard/tests -v
 python3 -m unittest discover -s skills/autonomous-ai-agents/heretic/scripts -p 'test_*.py'
 ```
 

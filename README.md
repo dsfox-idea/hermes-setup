@@ -11,6 +11,7 @@ reviewer has a separate explicit host-patch step; evaluation runs only on reques
 | Skin (`skins/dsfox-skin.yaml`) | Muted green ANSI-256 palette, high-contrast diffs, `DSFOX-AGENT` wordmark |
 | TUI patch (`patches/hermes-tui.patch`) | Chat canvas `#1c1c1c`, black user messages and composer, compact transcript, themed choice cards, `activity` status indicator with elapsed-time colors, copy confirmation on mouse selection, a bright-green stats line after each final reply (time without and with waiting for your answers, tokens/s for the task and for the model, estimated cost `≈$` at API prices) |
 | Refusal retry (`plugins/refusal-retry/`) | When the provider's safety filter refuses a request and no fallback provider is configured, the same request is sent again after 10 s and after 60 s; the third refusal ends the turn as before |
+| Repo guard (`plugins/repo-guard/`) | A chat working inside one git repository asks you before any tool call reaches another repository (each project keeps its own chat) |
 | Optional skill notes | Extended `hermes-agent` skill notes |
 | Optional response review | Local Heretic review, separate attributed output, independent primary-agent assessment; see [response review](docs/response-review.md) |
 | Capability evaluation (preparation stage) | Metadata inventory, synthetic comparison inputs and typed outcome checks; no automatic model runs, rankings or archival; see [capability evaluation](docs/capability-evaluation.md) |
@@ -59,8 +60,8 @@ For every profile (`default` and each one under `profiles/`) the script:
    Hermes at it with `HERMES_TUI_DIR` in the profile's `.env`;
 4. sets `display.tui_status_indicator activity`;
 5. installs the `tui-overlay` gateway hook into `<Hermes home>/hooks/`;
-6. copies `plugins/refusal-retry` into `<profile>/plugins/`, enables it and checks
-   that it fits the installed Hermes version.
+6. copies `plugins/refusal-retry` and `plugins/repo-guard` into `<profile>/plugins/`,
+   enables them and checks that refusal-retry fits the installed Hermes version.
 
 Options, combinable:
 
@@ -156,6 +157,30 @@ the hook. Backups from `--skill` stay in `<profile>/backups/`.
 | macOS | Terminals inside IDEs or agents may export `PYTHONPATH` or `NODE_ENV`; `-I` keeps `PYTHONPATH` out of the run, and Terminal.app or iTerm avoids both. |
 | Linux | Same commands as macOS. Not yet exercised on Linux. |
 
+### Repo guard
+
+When a chat's working directory is inside a git repository, every tool call is
+checked before it runs: the `path`/`workdir` arguments of any tool, and the paths
+a terminal command or `execute_code` source names (absolute, `~/`, `$HOME/`,
+`../`, and the targets of `cd`, `pushd`, `git -C`). If one of them lies in a
+different repository, Hermes' normal approval prompt appears, naming both
+repositories. "Once" or "session" continues in this chat; "deny" stops the step
+and tells the agent to name the mismatch and offer to hand the work to that
+project's chat. A chat without a repository (a service chat, a chat in the home
+directory) is not checked. Paths outside any repository, the Hermes home and
+repositories nested inside the session's own pass. Runs without anyone to answer
+(`hermes chat -q`, cron) follow `approvals.single_query_mode` / `approvals.cron_mode`;
+the default `deny` blocks the step.
+
+Directories that never count as foreign:
+
+```sh
+hermes config set plugins.entries.repo-guard.settings.allow '["/path/to/shared-repo"]'
+```
+
+The command parsing is a heuristic: a path assembled at run time (`D=x; cd $D`)
+is not seen.
+
 ## Other contents
 
 | Path | Purpose |
@@ -164,6 +189,7 @@ the hook. Backups from `--skill` stay in `<profile>/backups/`.
 | `hooks/tui-overlay/` | Gateway hook that rebuilds the TUI after updates |
 | `config.example.json` | Non-secret configuration example; set single keys with `hermes config set`, never copy it over a profile |
 | `upstream.json` | Hermes revision the patch was cut from, and the patch checksum |
+| `plugins/repo-guard/` | Repo-guard plugin and its tests (`python3 -m unittest discover -s plugins/repo-guard/tests`) |
 | `plugins/refusal-retry/` | Refusal-retry plugin and its tests (`hermes --run-module unittest discover -s plugins/refusal-retry/tests`) |
 | `plugins/heretic-reviewer/`, `scripts/install_review.py` | Explicit, single-profile installation of local response review |
 | `patches/response-review-host.patch` | Optional Python-host support; unlike the default TUI overlay, applying this modifies the selected source checkout |

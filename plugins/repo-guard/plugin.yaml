@@ -1,0 +1,6 @@
+name: repo-guard
+version: 0.1.0
+description: "Asks the owner before a tool call reaches another git repository than the session's own."
+author: "Dmitry Golubnichiy"
+provides_hooks:
+  - pre_tool_call

@@ -38,6 +38,17 @@ edited or unmanaged files are never removed silently.
    separate step: `scripts/setup.py install` updates every discovered profile.
    Do not use it to verify a build while unrelated live sessions must stay intact.
 
+## Refusal-retry plugin
+
+`plugins/refusal-retry/` is maintained here directly; the snapshot exporter does
+not own it. It wraps `agent.turn_truncation.handle_content_policy_refusal` (also
+rebound in `agent.turn_response_check`) and `agent.turn_api_error.settle_unrecovered_error`.
+`retry.compatibility()` names what it needs from Hermes; the installer runs
+`test_this_hermes_fits` after copying the plugin. When Hermes renames or reshapes
+those functions, update the wrappers and the turn-loop tests in
+`plugins/refusal-retry/tests/test_retry.py`, which drive a real
+`AIAgent.run_conversation` with a mocked provider client.
+
 ## Optional components
 
 Response review and capability-evaluation preparation are maintained public
@@ -119,6 +130,7 @@ Optional-component checks (no model requests):
 ```sh
 python3 -m unittest discover -s scripts -p 'test_*.py'
 hermes --run-module unittest discover -s plugins/heretic-reviewer/tests -v
+hermes --run-module unittest discover -s plugins/refusal-retry/tests -v
 python3 -m unittest discover -s skills/autonomous-ai-agents/heretic/scripts -p 'test_*.py'
 ```
 

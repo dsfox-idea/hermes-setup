@@ -1,0 +1,4 @@
+name: refusal-retry
+version: 0.1.0
+description: "Retries a provider safety-filter refusal twice (after 10 s and 60 s by default) before the turn ends."
+author: "Dmitry Golubnichiy"

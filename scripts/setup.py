@@ -7,9 +7,10 @@
 
 `install` copies the skin into every profile, selects it with the TUI interface and
 compact transcript, builds the patched TUI overlay (scripts/tui_overlay.py) and
-installs its gateway hook. `--skill` also replaces the profile's hermes-agent
-skill after backing it up. Every step goes through the
-Hermes CLI or plain file copies; the Hermes checkout is never modified.
+installs its gateway hook, then installs and enables the refusal-retry plugin.
+`--skill` also replaces the profile's hermes-agent skill after backing it up.
+Every step goes through the Hermes CLI or plain file copies; the Hermes checkout
+is never modified.
 """
 
 import argparse
@@ -27,6 +28,8 @@ log = logging.getLogger("setup")
 REPOSITORY = Path(__file__).resolve().parent.parent
 SKIN = "dsfox-skin"
 SKILL = Path("skills/autonomous-ai-agents/hermes-agent")
+PLUGIN = "refusal-retry"
+PLUGIN_SKIP = ("__pycache__", "tests")
 
 
 class Profile:
@@ -78,6 +81,38 @@ class SetupInstaller:
             self.hermes(profile, "config", "set", "display.tui_status_indicator", "activity")
         return True
 
+    def plugin_files(self) -> dict:
+        source = self.repository / "plugins" / PLUGIN
+        return {path.relative_to(source): path.read_bytes() for path in sorted(source.rglob("*"))
+                if path.is_file() and not set(path.relative_to(source).parts) & set(PLUGIN_SKIP)}
+
+    def plugin_current(self, profile: Profile) -> bool:
+        target = profile.home / "plugins" / PLUGIN
+        return all((target / name).is_file() and (target / name).read_bytes() == data
+                   for name, data in self.plugin_files().items())
+
+    def plugin_fits(self) -> bool:
+        """Run the plugin's own compatibility test against this Hermes, in Hermes' interpreter."""
+        executable = shutil.which("hermes")
+        if not executable:
+            raise RuntimeError("hermes CLI not found on PATH")
+        result = self.run([executable, "--run-module", "unittest", "discover", "-s",
+                           str(self.repository / "plugins" / PLUGIN / "tests"), "-k", "test_this_hermes_fits"],
+                          capture_output=True, text=True)
+        if result.returncode != 0:
+            log.error("%s does not fit this Hermes version:\n%s", PLUGIN, (result.stderr or result.stdout or "").strip())
+        return result.returncode == 0
+
+    def install_plugin(self) -> bool:
+        source = self.repository / "plugins" / PLUGIN
+        for profile in self.profiles:
+            target = profile.home / "plugins" / PLUGIN
+            shutil.rmtree(target, ignore_errors=True)
+            shutil.copytree(source, target, ignore=shutil.ignore_patterns(*PLUGIN_SKIP))
+            self.hermes(profile, "plugins", "enable", PLUGIN, "--no-allow-tool-override")
+            log.info("plugin %s enabled in profile %s", PLUGIN, profile.name)
+        return self.plugin_fits()
+
     def install_skill(self) -> None:
         for profile in self.profiles:
             profile.backup(SKILL, self.stamp)
@@ -94,6 +129,8 @@ class SetupInstaller:
         self.install.set_env("")
         shutil.rmtree(self.install.home / "hooks" / "tui-overlay", ignore_errors=True)
         for profile in self.profiles:
+            self.hermes(profile, "plugins", "disable", PLUGIN)
+            shutil.rmtree(profile.home / "plugins" / PLUGIN, ignore_errors=True)
             self.hermes(profile, "config", "set", "display.skin", "default")
             self.hermes(profile, "config", "set", "display.tui_status_indicator", "kaomoji")
         log.info("stock skin and TUI restored; skill backups stay under <profile>/backups/")
@@ -113,17 +150,19 @@ def main() -> int:
         overlay = TuiOverlay(install, REPOSITORY / "patches" / "hermes-tui.patch")
         print(f"profiles: {', '.join(p.name for p in installer.profiles)}")
         print(f"patched TUI current: {overlay.current()}")
+        print(f"{PLUGIN} plugin current: {all(installer.plugin_current(p) for p in installer.profiles)}")
         return 0
     if arguments.action == "uninstall":
         installer.uninstall()
         return 0
     installer.install_skin()
     overlay_ok = installer.install_overlay()
+    plugin_ok = installer.install_plugin()
     if arguments.skill:
         installer.install_skill()
     if arguments.timezone:
         installer.set_timezone(arguments.timezone)
-    return 0 if overlay_ok else 1
+    return 0 if overlay_ok and plugin_ok else 1
 
 
 if __name__ == "__main__":

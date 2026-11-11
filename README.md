@@ -10,6 +10,7 @@ reviewer has a separate explicit host-patch step; evaluation runs only on reques
 | --- | --- |
 | Skin (`skins/dsfox-skin.yaml`) | Muted green ANSI-256 palette, high-contrast diffs, `DSFOX-AGENT` wordmark |
 | TUI patch (`patches/hermes-tui.patch`) | Chat canvas `#1c1c1c`, black user messages and composer, compact transcript, themed choice cards, `activity` status indicator with elapsed-time colors, copy confirmation on mouse selection, a bright-green stats line after each final reply (time without and with waiting for your answers, tokens/s for the task and for the model, estimated cost `≈$` at API prices) |
+| Refusal retry (`plugins/refusal-retry/`) | When the provider's safety filter refuses a request and no fallback provider is configured, the same request is sent again after 10 s and after 60 s; the third refusal ends the turn as before |
 | Optional skill notes | Extended `hermes-agent` skill notes |
 | Optional response review | Local Heretic review, separate attributed output, independent primary-agent assessment; see [response review](docs/response-review.md) |
 | Capability evaluation (preparation stage) | Metadata inventory, synthetic comparison inputs and typed outcome checks; no automatic model runs, rankings or archival; see [capability evaluation](docs/capability-evaluation.md) |
@@ -57,7 +58,9 @@ For every profile (`default` and each one under `profiles/`) the script:
 3. builds the patched TUI into `<Hermes home>/tui-overlay/ui-tui-<version>` and points
    Hermes at it with `HERMES_TUI_DIR` in the profile's `.env`;
 4. sets `display.tui_status_indicator activity`;
-5. installs the `tui-overlay` gateway hook into `<Hermes home>/hooks/`.
+5. installs the `tui-overlay` gateway hook into `<Hermes home>/hooks/`;
+6. copies `plugins/refusal-retry` into `<profile>/plugins/`, enables it and checks
+   that it fits the installed Hermes version.
 
 Options, combinable:
 
@@ -69,8 +72,9 @@ Options, combinable:
 `--skill` first backs up the replaced skill to
 `<profile>/backups/hermes-setup-<timestamp>/`.
 
-Exit code 1 means the patch does not fit your Hermes version: the skin is
-installed, the stock TUI stays, and the reason is in the output.
+Exit code 1 means the patch or the refusal-retry plugin does not fit your Hermes
+version: the skin is installed, the stock TUI stays (or the plugin leaves Hermes
+unchanged and logs `refusal-retry inactive`), and the reason is in the output.
 
 Two lines in the output look like errors and are not: `HERMES_TUI_DIR='' in
 profile ...` (the old build is switched off before the new one is made; the path
@@ -79,6 +83,31 @@ is filled in a few seconds later) and the esbuild size warning `entry.js 3.9mb`.
 The gateway hook starts working after the next gateway start. Run
 `hermes gateway restart` once, or let the next `hermes update` do it; until then
 an update is not followed by a rebuild.
+
+### Refusal retry
+
+The provider's safety filter sometimes refuses an ordinary request (for example
+Anthropic's "Cyber safeguards flagged this message"). Hermes treats a refusal as
+final: it tries a configured fallback provider once, otherwise the turn ends. The
+`refusal-retry` plugin keeps the fallback step and, with no fallback left, waits
+and sends the same request again. While it waits the chat shows
+`⏳ The provider's safety filter refused the request — retrying automatically in 10 s (retry 1/2)`;
+Esc stops the wait. If every retry is refused, the usual error message ends with
+`Retried 2 times (after 10 s, 60 s); the filter refused every attempt.`
+
+The count is per model request, so a normal answer starts the next one at zero.
+Both ways Hermes reports a refusal are covered: an answer that stops with a
+refusal and an API error classified as a content-policy block. To change the
+waits (seconds, at most 5 retries of up to 600 s; an empty list turns retries off):
+
+```sh
+hermes config set plugins.entries.refusal-retry.settings.delays '[10, 60]'
+```
+
+The plugin wraps two internal Hermes functions at load time and does not modify
+the source checkout. After `hermes update`, `scripts/setup.py install` reruns its
+compatibility test. It takes effect in sessions started after installation: new
+TUI windows and the gateway after its next start.
 
 ## Check
 
@@ -135,6 +164,7 @@ the hook. Backups from `--skill` stay in `<profile>/backups/`.
 | `hooks/tui-overlay/` | Gateway hook that rebuilds the TUI after updates |
 | `config.example.json` | Non-secret configuration example; set single keys with `hermes config set`, never copy it over a profile |
 | `upstream.json` | Hermes revision the patch was cut from, and the patch checksum |
+| `plugins/refusal-retry/` | Refusal-retry plugin and its tests (`hermes --run-module unittest discover -s plugins/refusal-retry/tests`) |
 | `plugins/heretic-reviewer/`, `scripts/install_review.py` | Explicit, single-profile installation of local response review |
 | `patches/response-review-host.patch` | Optional Python-host support; unlike the default TUI overlay, applying this modifies the selected source checkout |
 | `scripts/skill_evaluation.py`, `scripts/prepare_skill_trials.py`, `evaluations/skill-selection/` | Portable capability inventory and preparation-only evaluation inputs |

@@ -1,4 +1,5 @@
 from pathlib import Path
+from types import SimpleNamespace
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -19,9 +20,20 @@ class SetupInstallerTests(unittest.TestCase):
         (self.repository / SKILL / "SKILL.md").write_text("new skill\n")
         (self.repository / "skins").mkdir()
         (self.repository / "skins" / "dsfox-skin.yaml").write_text("name: dsfox-skin\n")
+        plugin = self.repository / "plugins" / "refusal-retry"
+        (plugin / "tests").mkdir(parents=True)
+        (plugin / "__init__.py").write_text("def register(ctx): pass\n")
+        (plugin / "plugin.yaml").write_text("name: refusal-retry\n")
+        (plugin / "tests" / "test_retry.py").write_text("")
         self.calls = []
-        self.installer = SetupInstaller(HermesInstall(self.home, root / "checkout"), self.repository,
-                                        run=lambda command, **_: self.calls.append(command[2:]))
+        self.check_exit = 0
+
+        def run(command, **_):
+            self.calls.append(command[1:] if command[1] == "--run-module" else command[2:])
+            return SimpleNamespace(returncode=self.check_exit if command[1] == "--run-module" else 0,
+                                   stdout="", stderr="FAILED: changed shape")
+
+        self.installer = SetupInstaller(HermesInstall(self.home, root / "checkout"), self.repository, run=run)
 
     def tearDown(self):
         self.temporary.cleanup()
@@ -35,6 +47,22 @@ class SetupInstallerTests(unittest.TestCase):
         self.assertTrue((self.home / "profiles" / "work" / "skins" / "dsfox-skin.yaml").is_file())
         self.assertIn(["work", "skin", "use", "dsfox-skin"], self.calls)
         self.assertIn(["default", "config", "set", "display.tui_compact", "true"], self.calls)
+
+    def test_plugin_reaches_every_profile_without_its_tests(self):
+        with patch("setup.shutil.which", return_value="hermes"):
+            self.assertTrue(self.installer.install_plugin())
+        for profile in self.installer.profiles:
+            target = profile.home / "plugins" / "refusal-retry"
+            self.assertTrue((target / "__init__.py").is_file())
+            self.assertFalse((target / "tests").exists())
+            self.assertTrue(self.installer.plugin_current(profile))
+        self.assertIn(["work", "plugins", "enable", "refusal-retry", "--no-allow-tool-override"], self.calls)
+        self.assertIn("test_this_hermes_fits", self.calls[-1])
+
+    def test_plugin_that_does_not_fit_fails_the_install(self):
+        self.check_exit = 1
+        with patch("setup.shutil.which", return_value="hermes"), self.assertLogs("setup", "ERROR"):
+            self.assertFalse(self.installer.install_plugin())
 
     def test_skill_is_backed_up_before_it_is_replaced(self):
         old = self.home / "profiles" / "work" / SKILL

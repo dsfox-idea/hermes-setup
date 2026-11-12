@@ -1428,9 +1428,18 @@ index 54823d1c25..5f451fc664 100644
    streamSegments: Msg[]
    streaming: string
 diff --git a/ui-tui/src/app/useMainApp.ts b/ui-tui/src/app/useMainApp.ts
-index d287657e62..fac621b6a9 100644
+index d287657e62..e029cebb20 100644
 --- a/ui-tui/src/app/useMainApp.ts
 +++ b/ui-tui/src/app/useMainApp.ts
+@@ -37,7 +37,7 @@ import { t } from '../i18n/runtime.js'
+ import { useT } from '../i18n/useT.js'
+ import { composerPromptWidth } from '../lib/inputMetrics.js'
+ import { appendTranscriptMessage, capTranscriptHistory } from '../lib/messages.js'
+-import { DEFAULT_VOICE_RECORD_KEY, isMac, type ParsedVoiceRecordKey } from '../lib/platform.js'
++import { DEFAULT_VOICE_RECORD_KEY, type ParsedVoiceRecordKey } from '../lib/platform.js'
+ import { createResizeCoalescer } from '../lib/resizeCoalescer.js'
+ import { asRpcResult, rpcErrorMessage } from '../lib/rpc.js'
+ import { terminalParityHints } from '../lib/terminalParity.js'
 @@ -53,6 +53,7 @@ import { createServerRequestHandler } from './createServerRequestHandler.js'
  import { createSlashHandler } from './createSlashHandler.js'
  import { planGatewayRecovery } from './gatewayRecovery.js'
@@ -1447,8 +1456,16 @@ index d287657e62..fac621b6a9 100644
  
    useEffect(() => {
      selection.setSelectionBgColor(ui.theme.color.selectionBg)
-@@ -383,34 +383,14 @@ export function useMainApp(gw: GatewayClient) {
-   // copy-on-select: once a drag creates a stable TUI selection, write it to
+@@ -378,39 +378,15 @@ export function useMainApp(gw: GatewayClient) {
+     setDimFallbackColor(ui.theme.color.muted)
+   }, [ui.theme.color.muted])
+ 
+-  // macOS Terminal.app does not forward Cmd+C to fullscreen TUIs that enable
+-  // mouse tracking, so the only reliable native-feeling path is iTerm-style
+-  // copy-on-select: once a drag creates a stable TUI selection, write it to
++  // Mouse tracking hides the terminal's own selection (and macOS Terminal.app
++  // does not forward Cmd+C), so copy-on-select runs on every platform: once a
++  // drag or a double/triple click creates a stable TUI selection, write it to
    // the system clipboard while keeping the highlight visible.
    //
 -  // Subscribe directly via the ink selection bus (not useSyncExternalStore)
@@ -1456,10 +1473,10 @@ index d287657e62..fac621b6a9 100644
 -  // ref de-dupes against re-entrant notifications.
 +  // Observe release transitions without re-rendering MainApp on every drag tick.
    useEffect(() => {
-     if (!isMac) {
-       return
-     }
- 
+-    if (!isMac) {
+-      return
+-    }
+-
 -    return selection.subscribe(() => {
 -      if (!selection.hasSelection()) {
 -        return
@@ -1485,7 +1502,7 @@ index d287657e62..fac621b6a9 100644
    }, [selection])
  
    const clearSelection = useCallback(() => {
-@@ -842,10 +822,10 @@ export function useMainApp(gw: GatewayClient) {
+@@ -842,10 +818,10 @@ export function useMainApp(gw: GatewayClient) {
      // transient "prompt cancelled" flash) so the prompt survives on screen as
      // standard output, matching the timeout path.
      const settleCancelled = () => {
@@ -1498,7 +1515,7 @@ index d287657e62..fac621b6a9 100644
        patchOverlayState({ clarify: null })
      }
  
-@@ -906,8 +886,10 @@ export function useMainApp(gw: GatewayClient) {
+@@ -906,8 +882,10 @@ export function useMainApp(gw: GatewayClient) {
              turnController.turnTools = turnController.turnTools.filter(line => !sameToolTrailGroup(label, line))
              patchTurnState({ turnTrail: turnController.turnTools })
              turnController.persistedToolLabels.add(label)
@@ -1511,7 +1528,7 @@ index d287657e62..fac621b6a9 100644
              patchUiState({ status: 'running…' })
              patchOverlayState({ clarify: null })
            }
-@@ -946,8 +928,10 @@ export function useMainApp(gw: GatewayClient) {
+@@ -946,8 +924,10 @@ export function useMainApp(gw: GatewayClient) {
          turnController.turnTools = turnController.turnTools.filter(line => !sameToolTrailGroup(label, line))
          patchTurnState({ turnTrail: turnController.turnTools })
          turnController.persistedToolLabels.add(label)
@@ -1524,7 +1541,7 @@ index d287657e62..fac621b6a9 100644
          patchUiState({ status: 'running…' })
          patchOverlayState({ clarify: null })
        })
-@@ -955,6 +939,34 @@ export function useMainApp(gw: GatewayClient) {
+@@ -955,6 +935,34 @@ export function useMainApp(gw: GatewayClient) {
      [appendMessage, overlay.clarify, rpc]
    )
  
@@ -1559,7 +1576,7 @@ index d287657e62..fac621b6a9 100644
    sysRef.current = sys
  
    const { dispatchSubmission, send, sendQueued, submit, submitLiteral } = useSubmission({
-@@ -1467,7 +1479,7 @@ export function useMainApp(gw: GatewayClient) {
+@@ -1467,7 +1475,7 @@ export function useMainApp(gw: GatewayClient) {
      sectionMode('activity', ui.detailsMode, ui.sections, ui.detailsModeCommandOverride) !== 'hidden'
  
    const showProgressArea = useTurnSelector(state =>
@@ -1568,7 +1585,7 @@ index d287657e62..fac621b6a9 100644
        ? Boolean(
            ui.busy ||
            state.outcome ||
-@@ -1500,7 +1512,7 @@ export function useMainApp(gw: GatewayClient) {
+@@ -1500,7 +1508,7 @@ export function useMainApp(gw: GatewayClient) {
            (thinkingPanelVisible && hasReasoning) ||
            state.activity.length
          )
@@ -1577,7 +1594,7 @@ index d287657e62..fac621b6a9 100644
    )
  
    const appActions = useMemo(
-@@ -1509,6 +1521,7 @@ export function useMainApp(gw: GatewayClient) {
+@@ -1509,6 +1517,7 @@ export function useMainApp(gw: GatewayClient) {
        closeLiveSession,
        answerApproval,
        answerClarifyQuestion,
@@ -1585,7 +1602,7 @@ index d287657e62..fac621b6a9 100644
        answerSecret,
        answerSudo,
        answerVaultCode,
-@@ -1535,6 +1548,7 @@ export function useMainApp(gw: GatewayClient) {
+@@ -1535,6 +1544,7 @@ export function useMainApp(gw: GatewayClient) {
      [
        answerApproval,
        answerClarifyQuestion,
@@ -2280,7 +2297,7 @@ index 2cf259a959..d3449da59a 100644
    )
  })
 diff --git a/ui-tui/src/components/textInput.tsx b/ui-tui/src/components/textInput.tsx
-index daca6ae643..ee41039309 100644
+index daca6ae643..13338d32c3 100644
 --- a/ui-tui/src/components/textInput.tsx
 +++ b/ui-tui/src/components/textInput.tsx
 @@ -3,6 +3,7 @@ import * as Ink from '@hermes/ink'
@@ -2304,11 +2321,13 @@ index daca6ae643..ee41039309 100644
    return (env.WSL_DISTRO_NAME ?? '').toLowerCase().includes('microsoft')
  }
  
-@@ -1355,7 +1362,7 @@ export function TextInput({
+@@ -1354,8 +1361,8 @@ export function TextInput({
+ 
      const normalized = selRange()
  
-     if (isMac && normalized) {
+-    if (isMac && normalized) {
 -      void writeClipboardText(vRef.current.slice(normalized.start, normalized.end))
++    if (normalized) {
 +      void clipboardFeedback.copyText(vRef.current.slice(normalized.start, normalized.end))
      }
    }
@@ -4634,10 +4653,10 @@ index 0000000000..970370e053
 +})
 diff --git a/ui-tui/src/__tests__/copyOnMouseRelease.test.tsx b/ui-tui/src/__tests__/copyOnMouseRelease.test.tsx
 new file mode 100644
-index 0000000000..55143ea6c1
+index 0000000000..64a653d2af
 --- /dev/null
 +++ b/ui-tui/src/__tests__/copyOnMouseRelease.test.tsx
-@@ -0,0 +1,62 @@
+@@ -0,0 +1,61 @@
 +import { PassThrough } from 'node:stream'
 +
 +import { renderSync } from '@hermes/ink'
@@ -4647,7 +4666,6 @@ index 0000000000..55143ea6c1
 +import { clipboardFeedback } from '../app/clipboardFeedback.js'
 +import { TextInput, type TextInputMouseApi } from '../components/textInput.js'
 +import { writeClipboardText } from '../lib/clipboard.js'
-+import { isMac } from '../lib/platform.js'
 +
 +vi.mock('../lib/clipboard.js', () => ({
 +  writeClipboardText: vi.fn(async () => true),
@@ -4673,7 +4691,7 @@ index 0000000000..55143ea6c1
 +  }
 +}
 +
-+describe.skipIf(!isMac)('composer copy on mouse release', () => {
++describe('composer copy on mouse release', () => {
 +  it('copies exactly the selected text on release, keeps the draft and announces success', async () => {
 +    const fixture = new MouseCopyFixture()
 +    const view = fixture.mount()

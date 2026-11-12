@@ -9,7 +9,7 @@ reviewer has a separate explicit host-patch step; evaluation runs only on reques
 | Part | What you get |
 | --- | --- |
 | Skin (`skins/dsfox-skin.yaml`) | Muted green ANSI-256 palette, high-contrast diffs, `DSFOX-AGENT` wordmark |
-| TUI patch (`patches/hermes-tui.patch`) | Chat canvas `#1c1c1c`, black user messages and composer, compact transcript, themed choice cards, `activity` status indicator with elapsed-time colors, copy confirmation on mouse selection, a bright-green stats line after each final reply (time without and with waiting for your answers, tokens/s for the task and for the model, estimated cost `≈$` at API prices) |
+| TUI patch (`patches/hermes-tui.patch`) | Chat canvas `#1c1c1c`, black user messages and composer, compact transcript, themed choice cards, `activity` status indicator with elapsed-time colors, copy-on-select on every platform (drag, double-click word, triple-click line) with a confirmation, a bright-green stats line after each final reply (time without and with waiting for your answers, tokens/s for the task and for the model, estimated cost `≈$` at API prices) |
 | Refusal retry (`plugins/refusal-retry/`) | When the provider's safety filter refuses a request and no fallback provider is configured, the same request is sent again after 10 s and after 60 s; the third refusal ends the turn as before |
 | Repo guard (`plugins/repo-guard/`) | A chat working inside one git repository asks you before any tool call reaches another repository (each project keeps its own chat) |
 | Optional skill notes | Extended `hermes-agent` skill notes |

@@ -65,6 +65,21 @@ Levels: none, minimal, low, medium, high, xhigh.
 4. Measure stored size or capacity at the configured backend if that is the user's question and read access is available. An empty local `memories/` directory does not measure Honcho storage, and an empty peer card/context does not prove that no raw messages exist. If backend size was not measured, say so instead of calling memory empty or unlimited.
 5. Separate injected project instructions from recalled memory when explaining what the assistant knows; seeing working rules in the prompt does not establish cross-session retrieval.
 
+### Batched question wizard
+
+- Prepare all known independent decisions before calling `clarify`. Send a coherent
+  batch in one call, using `multi_select` for independent choices and single-select
+  for alternatives. Do not spend a model turn on each known question or checkbox.
+- The patched Ink TUI provides Back/Next, retained drafts, an editable review page,
+  and a separate Submit answers action. Navigation is local; one aggregate result
+  resumes the model. Do not put navigation or exit in the question's answer choices.
+- Keep the existing tool contract: 1-5 questions, at most four supplied choices per
+  question. A later batch is appropriate for dependent follow-ups or a larger set.
+- Leave open does not select a default. Exit preserves partial answers with a
+  cancelled outcome; do not treat them as a completed decision.
+- Verify the active Ink renderer and request-handler path. Classic CLI callbacks,
+  source edits and a successful build do not prove an existing window adopted it.
+
 ### Toolsets
 
 Enable/disable via `hermes tools` (interactive) or `hermes tools enable/disable NAME`.

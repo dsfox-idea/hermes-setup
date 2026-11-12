@@ -174,6 +174,52 @@ index f9897c96cc..4bf2a976f1 100644
  DEFAULT_INDICATOR_STYLE: str = "kaomoji"
  
  
+diff --git a/locales/_keys.tui.json b/locales/_keys.tui.json
+index b2f96f9e5e..9d3bbdbed8 100644
+--- a/locales/_keys.tui.json
++++ b/locales/_keys.tui.json
+@@ -750,13 +750,24 @@
+   "prompt.approval.once",
+   "prompt.approval.session",
+   "prompt.approval.title",
++  "prompt.clarify.back",
+   "prompt.clarify.confirmAndContinue",
++  "prompt.clarify.continue",
++  "prompt.clarify.exit",
+   "prompt.clarify.hint",
++  "prompt.clarify.leaveOpen",
++  "prompt.clarify.leftOpen",
+   "prompt.clarify.lockAnswer",
++  "prompt.clarify.next",
+   "prompt.clarify.other",
++  "prompt.clarify.reviewAnswers",
+   "prompt.clarify.skipped",
++  "prompt.clarify.submitAnswers",
+   "prompt.clarify.toggle",
+   "prompt.clarify.typingHint",
++  "prompt.clarify.wizardHint",
++  "prompt.clarify.wizardTitle",
++  "prompt.clarify.wizardTypingHint",
+   "prompt.confirm.cancel",
+   "prompt.confirm.confirm",
+   "prompt.confirm.hint",
+@@ -1186,6 +1197,7 @@
+   "status.bgTasks",
+   "status.compacting",
+   "status.compressions",
++  "status.copied",
+   "status.devCredits",
+   "status.fast",
+   "status.mcpReloaded",
+@@ -1196,6 +1208,8 @@
+   "status.running",
+   "status.sessionCount",
+   "status.summoning",
++  "status.turnModelTps",
++  "status.turnWithWait",
+   "subscription.confirm.blockedFallback",
+   "subscription.confirm.cancelBody",
+   "subscription.confirm.cancelKeepCredits",
 diff --git a/locales/en.yaml b/locales/en.yaml
 index 212c4d48c0..b155e289f8 100644
 --- a/locales/en.yaml
@@ -186,10 +232,28 @@ index 212c4d48c0..b155e289f8 100644
    dangerous_header: "⚠️  DANGEROUS COMMAND: {description}"
    choose_long: "      [o]nce  |  [s]ession  |  [a]lways  |  [d]eny"
 diff --git a/locales/ru.tui.yaml b/locales/ru.tui.yaml
-index e02416bf67..a5889fde44 100644
+index e02416bf67..5a4a6f51ef 100644
 --- a/locales/ru.tui.yaml
 +++ b/locales/ru.tui.yaml
-@@ -1212,6 +1212,9 @@ status.fast: "fast"
+@@ -769,6 +769,17 @@ prompt.approval.title: "⚠ требуется одобрение"
+ prompt.clarify.hint: "↑/↓ выбор · Enter {0} · Tab/Shift+Tab другой вопрос · Esc/Ctrl+C отмена"
+ prompt.clarify.typingHint: "Enter {0} · Esc назад"
+ prompt.clarify.confirmAndContinue: "подтвердить и продолжить"
++prompt.clarify.continue: "Далее"
++prompt.clarify.wizardTitle: "Мастер вопросов"
++prompt.clarify.next: "Далее"
++prompt.clarify.back: "Назад"
++prompt.clarify.leaveOpen: "Оставить открытым"
++prompt.clarify.leftOpen: "(оставлен открытым)"
++prompt.clarify.exit: "Выйти и сохранить частичные ответы"
++prompt.clarify.reviewAnswers: "Проверка ответов"
++prompt.clarify.submitAnswers: "Отправить ответы"
++prompt.clarify.wizardHint: "Пробел отметить · ↑/↓ выбор · Enter выбрать · ←/→ или Tab/Shift+Tab переход · Esc выйти"
++prompt.clarify.wizardTypingHint: "Enter далее · Tab/Shift+Tab переход · Esc назад / выйти"
+ prompt.clarify.lockAnswer: "зафиксировать ответ"
+ prompt.clarify.other: "Другое (введите свой ответ)"
+ prompt.clarify.skipped: "(пропущено)"
+@@ -1212,6 +1223,9 @@ status.fast: "fast"
  status.mcpReloaded: "MCP перезагружен после изменения конфигурации"
  status.paused: "⏸ пауза"
  status.ready: "готов"
@@ -966,7 +1030,7 @@ index d3f2a65f65..9dd689b684 100644
        allowPermanent: shared.allow_permanent !== false,
        choices: shared.choices,
 diff --git a/ui-tui/src/app/interfaces.ts b/ui-tui/src/app/interfaces.ts
-index ea2370665b..0b6599fd9b 100644
+index ea2370665b..0581678bff 100644
 --- a/ui-tui/src/app/interfaces.ts
 +++ b/ui-tui/src/app/interfaces.ts
 @@ -76,7 +76,7 @@ export interface Notice {
@@ -978,6 +1042,22 @@ index ea2370665b..0b6599fd9b 100644
  export type IndicatorStyle = (typeof INDICATOR_STYLES)[number]
  export const DEFAULT_INDICATOR_STYLE: IndicatorStyle = 'kaomoji'
  
+@@ -603,6 +603,7 @@ export interface SlashHandlerContext {
+ export interface AppLayoutActions {
+   answerApproval: (choice: string) => void
+   answerClarifyQuestion: (qid: string, answer: string) => void
++  submitClarifyAnswers: (answers: Record<string, string>, outcome: 'submitted' | 'cancelled') => void
+   answerSecret: (value: string) => void
+   answerSudo: (pw: string) => void
+   answerVaultCode: (code: string) => void
+@@ -675,6 +676,7 @@ export interface AppOverlaysProps {
+   onApprovalChoice: (choice: string) => void
+   onClarifyCancel: () => void
+   onClarifyQuestionAnswer: (qid: string, value: string) => void
++  onClarifySubmit: (answers: Record<string, string>, outcome: 'submitted' | 'cancelled') => void
+   onActiveSessionSelect: (sessionId: string) => void
+   onActiveSessionClose: (sessionId: string) => Promise<null | SessionCloseResponse>
+   onModelSelect: (value: string) => void
 diff --git a/ui-tui/src/app/pendingBubbles.ts b/ui-tui/src/app/pendingBubbles.ts
 index 10355ff1c9..42984775af 100644
 --- a/ui-tui/src/app/pendingBubbles.ts
@@ -1348,7 +1428,7 @@ index 54823d1c25..5f451fc664 100644
    streamSegments: Msg[]
    streaming: string
 diff --git a/ui-tui/src/app/useMainApp.ts b/ui-tui/src/app/useMainApp.ts
-index d287657e62..982aa02277 100644
+index d287657e62..fac621b6a9 100644
 --- a/ui-tui/src/app/useMainApp.ts
 +++ b/ui-tui/src/app/useMainApp.ts
 @@ -53,6 +53,7 @@ import { createServerRequestHandler } from './createServerRequestHandler.js'
@@ -1444,7 +1524,42 @@ index d287657e62..982aa02277 100644
          patchUiState({ status: 'running…' })
          patchOverlayState({ clarify: null })
        })
-@@ -1467,7 +1451,7 @@ export function useMainApp(gw: GatewayClient) {
+@@ -955,6 +939,34 @@ export function useMainApp(gw: GatewayClient) {
+     [appendMessage, overlay.clarify, rpc]
+   )
+ 
++  const submitClarifyAnswers = useCallback((answers: Record<string, string>, outcome: 'submitted' | 'cancelled') => {
++    const clarify = overlay.clarify
++
++    if (!clarify || !capturePromptResponseGuard('clarify', clarify)()) {
++      return
++    }
++
++    if (!respondToServerRequest(clarify.requestId, { answers, outcome })) {
++      return
++    }
++
++    const label = toolTrailLabel('clarify')
++    turnController.turnTools = turnController.turnTools.filter(line => !sameToolTrailGroup(label, line))
++    patchTurnState({ turnTrail: turnController.turnTools })
++    if (outcome === 'cancelled') {
++      turnController.recordPromptMessages([{ role: 'system', text: formatAbandonedClarify(clarify.questions, answers, outcome) }], appendMessage)
++    } else {
++      const settled = clarifySettledRows(clarify.questions, answers)
++      turnController.persistedToolLabels.add(label)
++      turnController.recordPromptMessages([
++        { kind: 'trail', role: 'system', text: '', tools: [settled.trail], createdAt: clarify.createdAt, toolCreatedAt: [clarify.createdAt] },
++        { role: 'user', text: settled.userText }
++      ], appendMessage)
++    }
++    patchUiState({ status: 'running…' })
++    patchOverlayState({ clarify: null })
++  }, [appendMessage, overlay.clarify])
++
+   sysRef.current = sys
+ 
+   const { dispatchSubmission, send, sendQueued, submit, submitLiteral } = useSubmission({
+@@ -1467,7 +1479,7 @@ export function useMainApp(gw: GatewayClient) {
      sectionMode('activity', ui.detailsMode, ui.sections, ui.detailsModeCommandOverride) !== 'hidden'
  
    const showProgressArea = useTurnSelector(state =>
@@ -1453,7 +1568,7 @@ index d287657e62..982aa02277 100644
        ? Boolean(
            ui.busy ||
            state.outcome ||
-@@ -1500,7 +1484,7 @@ export function useMainApp(gw: GatewayClient) {
+@@ -1500,7 +1512,7 @@ export function useMainApp(gw: GatewayClient) {
            (thinkingPanelVisible && hasReasoning) ||
            state.activity.length
          )
@@ -1462,6 +1577,22 @@ index d287657e62..982aa02277 100644
    )
  
    const appActions = useMemo(
+@@ -1509,6 +1521,7 @@ export function useMainApp(gw: GatewayClient) {
+       closeLiveSession,
+       answerApproval,
+       answerClarifyQuestion,
++      submitClarifyAnswers,
+       answerSecret,
+       answerSudo,
+       answerVaultCode,
+@@ -1535,6 +1548,7 @@ export function useMainApp(gw: GatewayClient) {
+     [
+       answerApproval,
+       answerClarifyQuestion,
++      submitClarifyAnswers,
+       answerSecret,
+       answerSudo,
+       answerVaultCode,
 diff --git a/ui-tui/src/components/appChrome.tsx b/ui-tui/src/components/appChrome.tsx
 index 967f269065..15f2813dd1 100644
 --- a/ui-tui/src/components/appChrome.tsx
@@ -1536,7 +1667,7 @@ index 967f269065..15f2813dd1 100644
    focusView?: boolean
    bgCount: number
 diff --git a/ui-tui/src/components/appLayout.tsx b/ui-tui/src/components/appLayout.tsx
-index 1abd583824..5d39fd4a86 100644
+index 1abd583824..0205cfee1c 100644
 --- a/ui-tui/src/components/appLayout.tsx
 +++ b/ui-tui/src/components/appLayout.tsx
 @@ -10,6 +10,7 @@ import type { AppLayoutProps } from '../app/interfaces.js'
@@ -1649,6 +1780,42 @@ index 1abd583824..5d39fd4a86 100644
          <Box flexDirection="row" flexGrow={1}>
            {!overlay.agents && !overlay.journey && <AmbientRail side="left" />}
            {overlay.agents ? (
+@@ -629,6 +652,7 @@ export const AppLayout = memo(function AppLayout({
+                 onApprovalChoice={actions.answerApproval}
+                 onClarifyCancel={actions.cancelClarify}
+                 onClarifyQuestionAnswer={actions.answerClarifyQuestion}
++                onClarifySubmit={actions.submitClarifyAnswers}
+                 onSecretSubmit={actions.answerSecret}
+                 onSudoSubmit={actions.answerSudo}
+                 onVaultCodeSubmit={actions.answerVaultCode}
+diff --git a/ui-tui/src/components/appOverlays.tsx b/ui-tui/src/components/appOverlays.tsx
+index 9de4c52c03..f13a11c485 100644
+--- a/ui-tui/src/components/appOverlays.tsx
++++ b/ui-tui/src/components/appOverlays.tsx
+@@ -62,6 +62,7 @@ export function PromptZone({
+   onApprovalChoice,
+   onClarifyCancel,
+   onClarifyQuestionAnswer,
++  onClarifySubmit,
+   onSecretSubmit,
+   onSudoSubmit,
+   onVaultCodeSubmit,
+@@ -73,6 +74,7 @@ export function PromptZone({
+   | 'onApprovalChoice'
+   | 'onClarifyCancel'
+   | 'onClarifyQuestionAnswer'
++  | 'onClarifySubmit'
+   | 'onSecretSubmit'
+   | 'onSudoSubmit'
+   | 'onVaultCodeSubmit'
+@@ -154,6 +156,7 @@ export function PromptZone({
+           cols={cols}
+           onCancel={onClarifyCancel}
+           onQuestionAnswer={onClarifyQuestionAnswer}
++          onSubmitAnswers={onClarifySubmit}
+           req={overlay.clarify}
+           t={theme}
+         />
 diff --git a/ui-tui/src/components/messageLine.tsx b/ui-tui/src/components/messageLine.tsx
 index def92f2185..7713d2d09f 100644
 --- a/ui-tui/src/components/messageLine.tsx
@@ -1922,10 +2089,10 @@ index def92f2185..7713d2d09f 100644
    tools?: ActiveTool[]
  }
 diff --git a/ui-tui/src/components/prompts.tsx b/ui-tui/src/components/prompts.tsx
-index 4f36dff1c0..c0c1344e21 100644
+index 4f36dff1c0..b0c8f4c556 100644
 --- a/ui-tui/src/components/prompts.tsx
 +++ b/ui-tui/src/components/prompts.tsx
-@@ -3,10 +3,12 @@ import { useEffect, useState } from 'react'
+@@ -3,10 +3,13 @@ import { useEffect, useState } from 'react'
  
  import { messages } from '../i18n/runtime.js'
  import { useT } from '../i18n/useT.js'
@@ -1934,11 +2101,12 @@ index 4f36dff1c0..c0c1344e21 100644
  import type { Theme } from '../theme.js'
  import type { ApprovalReq, ClarifyReq, ConfirmReq } from '../types.js'
  
++import { ClarifyWizard, type ClarifyWizardOutcome } from './clarifyWizard.js'
 +import { EventRow } from './eventRow.js'
  import { chipRowProps } from './overlayPrimitives.js'
  import { TextInput } from './textInput.js'
  
-@@ -118,9 +120,11 @@ export function ApprovalPrompt({ cols = 80, onChoice, req, t }: ApprovalPromptPr
+@@ -118,9 +121,11 @@ export function ApprovalPrompt({ cols = 80, onChoice, req, t }: ApprovalPromptPr
  
    return (
      <Box borderColor={t.color.warn} borderStyle="double" flexDirection="column" paddingX={1}>
@@ -1953,12 +2121,20 @@ index 4f36dff1c0..c0c1344e21 100644
  
        <Box flexDirection="column" paddingLeft={1}>
          {shown.map((line, i) => (
-@@ -148,8 +152,19 @@ export function ApprovalPrompt({ cols = 80, onChoice, req, t }: ApprovalPromptPr
+@@ -148,8 +153,27 @@ export function ApprovalPrompt({ cols = 80, onChoice, req, t }: ApprovalPromptPr
    )
  }
  
 -export function ClarifyPrompt({ cols = 80, onCancel, onQuestionAnswer, req, t }: ClarifyPromptProps) {
-+export function ClarifyPrompt({ cols = 80, onCancel, onQuestionAnswer, req, t: baseTheme }: ClarifyPromptProps) {
++export function ClarifyPrompt(props: ClarifyPromptProps) {
++  if (props.req.questions.length > 1 && props.onSubmitAnswers) {
++    return <ClarifyWizard cols={props.cols ?? 80} key={props.req.requestId} onSubmitAnswers={props.onSubmitAnswers} req={props.req} t={props.t} />
++  }
++
++  return <LegacyClarifyPrompt {...props} />
++}
++
++function LegacyClarifyPrompt({ cols = 80, onCancel, onQuestionAnswer, req, t: baseTheme }: ClarifyPromptProps) {
    const T = useT()
 +
 +  const t: Theme = {
@@ -1974,7 +2150,33 @@ index 4f36dff1c0..c0c1344e21 100644
    const [sel, setSel] = useState(0)
    const [custom, setCustom] = useState('')
    const [typing, setTyping] = useState(false)
-@@ -311,7 +326,7 @@ export function ClarifyPrompt({ cols = 80, onCancel, onQuestionAnswer, req, t }:
+@@ -207,6 +231,8 @@ export function ClarifyPrompt({ cols = 80, onCancel, onQuestionAnswer, req, t }:
+   const activeQuestion = questions[active]
+   const activeChoices = activeQuestion?.choices ?? []
+   const multi = activeQuestion?.multiSelect ?? false
++  const continueIndex = activeChoices.length + 1
++  const lastChoiceIndex = multi ? continueIndex : activeChoices.length
+   const answeredCount = questions.filter(q => answers[q.qid] !== undefined).length
+   const remainingCount = questions.length - answeredCount
+ 
+@@ -269,12 +295,14 @@ export function ClarifyPrompt({ cols = 80, onCancel, onQuestionAnswer, req, t }:
+       setSel(s => s - 1)
+     }
+ 
+-    if (key.downArrow && sel < activeChoices.length) {
++    if (key.downArrow && sel < lastChoiceIndex) {
+       setSel(s => s + 1)
+     }
+ 
+     if (key.return) {
+-      if (sel === activeChoices.length) {
++      if (multi && sel === continueIndex) {
++        lockPicked([])
++      } else if (sel === activeChoices.length) {
+         setTyping(true)
+       } else if (multi) {
+         lockPicked(picked.length ? [] : [activeChoices[sel]!])
+@@ -311,7 +339,7 @@ export function ClarifyPrompt({ cols = 80, onCancel, onQuestionAnswer, req, t }:
        : T.prompt.clarify.hint(enterAction)
  
    return (
@@ -1983,7 +2185,7 @@ index 4f36dff1c0..c0c1344e21 100644
        <Text bold>
          <Text color={t.color.accent}>ask</Text>
          <Text color={t.color.text}>
-@@ -328,7 +343,7 @@ export function ClarifyPrompt({ cols = 80, onCancel, onQuestionAnswer, req, t }:
+@@ -328,7 +356,7 @@ export function ClarifyPrompt({ cols = 80, onCancel, onQuestionAnswer, req, t }:
          const marker = answer !== undefined ? '✓' : isActive ? '▸' : '·'
  
          return (
@@ -1992,7 +2194,7 @@ index 4f36dff1c0..c0c1344e21 100644
              <Text>
                <Text bold={isActive} color={isActive ? t.color.text : t.color.muted}>
                  {marker} {q.question}
-@@ -351,7 +366,7 @@ export function ClarifyPrompt({ cols = 80, onCancel, onQuestionAnswer, req, t }:
+@@ -351,7 +379,7 @@ export function ClarifyPrompt({ cols = 80, onCancel, onQuestionAnswer, req, t }:
                    <Text color={t.color.label}>{'> '}</Text>
                    <TextInput
                      color={t.color.text}
@@ -2001,7 +2203,18 @@ index 4f36dff1c0..c0c1344e21 100644
                      onChange={setCustom}
                      onSubmit={value => (multi ? lockPicked([value]) : lockActive(value))}
                      value={custom}
-@@ -371,7 +386,7 @@ export function ClarifyPrompt({ cols = 80, onCancel, onQuestionAnswer, req, t }:
+@@ -368,10 +396,18 @@ export function ClarifyPrompt({ cols = 80, onCancel, onQuestionAnswer, req, t }:
+                       </Text>
+                     </Text>
+                   ))}
++                  {multi ? (
++                    <Text>
++                      <Text color={t.color.text} {...chipRowProps(t, sel === continueIndex)} bold>
++                        {sel === continueIndex ? '▸ ' : '  '}
++                        [ {T.prompt.clarify.continue} ]
++                      </Text>
++                    </Text>
++                  ) : null}
                  </Box>
                )
              ) : null}
@@ -2010,6 +2223,14 @@ index 4f36dff1c0..c0c1344e21 100644
          )
        })}
  
+@@ -456,6 +492,7 @@ interface ClarifyPromptProps {
+   cols?: number
+   onCancel: () => void
+   onQuestionAnswer: (qid: string, s: string) => void
++  onSubmitAnswers?: (answers: Record<string, string>, outcome: ClarifyWizardOutcome) => void
+   req: ClarifyReq
+   t: Theme
+ }
 diff --git a/ui-tui/src/components/streamingAssistant.tsx b/ui-tui/src/components/streamingAssistant.tsx
 index 2cf259a959..d3449da59a 100644
 --- a/ui-tui/src/components/streamingAssistant.tsx
@@ -2429,6 +2650,28 @@ index c06f9df630..4e040c021b 100644
      summoning: 'summoning hermes…',
      ready: 'ready',
      running: 'running…',
+diff --git a/ui-tui/src/i18n/en/overlays.ts b/ui-tui/src/i18n/en/overlays.ts
+index 4bfee29996..5daa2a30e7 100644
+--- a/ui-tui/src/i18n/en/overlays.ts
++++ b/ui-tui/src/i18n/en/overlays.ts
+@@ -14,6 +14,17 @@ export const overlaysEn = {
+     },
+     clarify: {
+       other: 'Other (type your answer)',
++      continue: 'Continue',
++      wizardTitle: 'Question wizard',
++      next: 'Next',
++      back: 'Back',
++      leaveOpen: 'Leave open',
++      leftOpen: '(left open)',
++      exit: 'Exit and keep partial answers',
++      reviewAnswers: 'Review answers',
++      submitAnswers: 'Submit answers',
++      wizardHint: 'Space toggle · ↑/↓ select · Enter choose · ←/→ or Tab/Shift+Tab navigate · Esc exit',
++      wizardTypingHint: 'Enter next · Tab/Shift+Tab navigate · Esc back / exit',
+       skipped: '(skipped)',
+       toggle: 'Space toggle',
+       confirmAndContinue: 'confirm and continue',
 diff --git a/ui-tui/src/lib/inputMetrics.ts b/ui-tui/src/lib/inputMetrics.ts
 index cf5df27c63..3ac5ed5d51 100644
 --- a/ui-tui/src/lib/inputMetrics.ts
@@ -3790,6 +4033,500 @@ index 0000000000..cd7cc517d4
 +    harness.emit('message.complete', { text: 'FINAL_MARKER' })
 +    await settle()
 +    expectOrder(harness.text(), ['BEFORE_MARKER', 'QUESTION_1', 'AFTER_MARKER', 'FINAL_MARKER'])
++  })
++})
+diff --git a/ui-tui/src/__tests__/clarifyContinue.test.tsx b/ui-tui/src/__tests__/clarifyContinue.test.tsx
+new file mode 100644
+index 0000000000..d0c45f416b
+--- /dev/null
++++ b/ui-tui/src/__tests__/clarifyContinue.test.tsx
+@@ -0,0 +1,151 @@
++import { PassThrough } from 'node:stream'
++import { stripVTControlCharacters } from 'node:util'
++
++import { renderSync } from '@hermes/ink'
++import React from 'react'
++import { afterEach, describe, expect, it, vi } from 'vitest'
++
++import { ClarifyPrompt } from '../components/prompts.js'
++import { applyLocale, resetLocale } from '../i18n/runtime.js'
++import { DEFAULT_THEME } from '../theme.js'
++import type { ClarifyReq } from '../types.js'
++
++class ClarifyFixture {
++  readonly answer = vi.fn()
++  readonly cancel = vi.fn()
++  readonly stdin = Object.assign(new PassThrough(), {
++    isTTY: true,
++    setRawMode: vi.fn(),
++    ref: vi.fn(),
++    unref: vi.fn()
++  })
++
++  readonly request: ClarifyReq = {
++    requestId: 'continue-fixture',
++    questions: [{ qid: 'first', question: 'Select items', choices: ['Alpha', 'Beta', 'Gamma'], multiSelect: true }]
++  }
++
++  private output = ''
++  private readonly view: ReturnType<typeof renderSync>
++
++  constructor(multiSelect = true) {
++    this.request.questions[0]!.multiSelect = multiSelect
++    const stdout = Object.assign(new PassThrough(), { columns: 100, rows: 30, isTTY: false })
++    stdout.on('data', chunk => { this.output += String(chunk) })
++    this.view = renderSync(this.element(), {
++      stdout: stdout as unknown as NodeJS.WriteStream,
++      stdin: this.stdin as unknown as NodeJS.ReadStream,
++      stderr: new PassThrough() as unknown as NodeJS.WriteStream,
++      patchConsole: false
++    })
++  }
++
++  private element() {
++    return <ClarifyPrompt cols={100} onCancel={this.cancel} onQuestionAnswer={this.answer} req={this.request} t={DEFAULT_THEME} />
++  }
++
++  get text() {
++    return stripVTControlCharacters(this.output)
++  }
++
++  async key(value: string) {
++    this.stdin.write(value)
++    await new Promise(resolve => setTimeout(resolve, 25))
++  }
++
++  async continue() {
++    for (let index = 0; index < 4; index += 1) {
++      await this.key('\x1b[B')
++    }
++
++    await this.key('\r')
++  }
++
++  rerender() {
++    this.view.rerender(this.element())
++  }
++
++  close() {
++    this.view.unmount()
++    this.view.cleanup()
++  }
++}
++
++let fixture: ClarifyFixture | undefined
++
++afterEach(() => {
++  fixture?.close()
++  fixture = undefined
++  resetLocale()
++})
++
++describe('Clarify multi-select continuation', () => {
++  it('shows a separate Continue action and submits only the checked choices', async () => {
++    fixture = new ClarifyFixture()
++    await vi.waitFor(() => expect(fixture!.text).toContain('[ Continue ]'))
++    await fixture.key('1')
++    await fixture.key('3')
++    expect(fixture.answer).not.toHaveBeenCalled()
++    await fixture.continue()
++    expect(fixture.answer).toHaveBeenCalledExactlyOnceWith('first', JSON.stringify(['Alpha', 'Gamma']))
++    expect(fixture.cancel).not.toHaveBeenCalled()
++  })
++
++  it('does not silently select the highlighted choice when continuing without checks', async () => {
++    fixture = new ClarifyFixture()
++    await fixture.continue()
++    expect(fixture.answer).toHaveBeenCalledExactlyOnceWith('first', '')
++  })
++
++  it('advances to the next question without carrying over checked choices', async () => {
++    fixture = new ClarifyFixture()
++    fixture.request.questions.push({ qid: 'second', question: 'Select more items', choices: ['Delta', 'Epsilon', 'Zeta'], multiSelect: true })
++    fixture.rerender()
++    await fixture.key('2')
++    await fixture.continue()
++    expect(fixture.answer).toHaveBeenLastCalledWith('first', JSON.stringify(['Beta']))
++    fixture.request.answers = { first: JSON.stringify(['Beta']) }
++    fixture.rerender()
++    await new Promise(resolve => setTimeout(resolve, 25))
++    await fixture.key('3')
++    await fixture.continue()
++    expect(fixture.answer).toHaveBeenLastCalledWith('second', JSON.stringify(['Zeta']))
++    expect(fixture.answer).toHaveBeenCalledTimes(2)
++  })
++
++  it('keeps Other available for text without losing checked choices', async () => {
++    fixture = new ClarifyFixture()
++    await fixture.key('1')
++
++    for (let index = 0; index < 3; index += 1) {
++      await fixture.key('\x1b[B')
++    }
++
++    await fixture.key('\r')
++    expect(fixture.answer).not.toHaveBeenCalled()
++    await fixture.key('Custom')
++    await fixture.key('\r')
++    expect(fixture.answer).toHaveBeenCalledExactlyOnceWith('first', JSON.stringify(['Alpha', 'Custom']))
++  })
++
++  it('cancels without submitting checked choices', async () => {
++    fixture = new ClarifyFixture()
++    await fixture.key('1')
++    await fixture.key('\x1b')
++    await vi.waitFor(() => expect(fixture!.cancel).toHaveBeenCalledOnce())
++    expect(fixture.answer).not.toHaveBeenCalled()
++  })
++
++  it('preserves direct single-choice selection without a Continue row', async () => {
++    fixture = new ClarifyFixture(false)
++    expect(fixture.text).not.toContain('[ Continue ]')
++    await fixture.key('2')
++    expect(fixture.answer).toHaveBeenCalledExactlyOnceWith('first', 'Beta')
++  })
++
++  it('uses the active locale for the Continue action', async () => {
++    applyLocale('fixture', { lang: 'fixture', surface: 'tui', messages: { 'prompt.clarify.continue': 'Proceed' } })
++    fixture = new ClarifyFixture()
++    await vi.waitFor(() => expect(fixture!.text).toContain('[ Proceed ]'))
++  })
++})
+diff --git a/ui-tui/src/__tests__/clarifyWizard.test.tsx b/ui-tui/src/__tests__/clarifyWizard.test.tsx
+new file mode 100644
+index 0000000000..633ca691f4
+--- /dev/null
++++ b/ui-tui/src/__tests__/clarifyWizard.test.tsx
+@@ -0,0 +1,165 @@
++import { PassThrough } from 'node:stream'
++import { stripVTControlCharacters } from 'node:util'
++
++import { renderSync } from '@hermes/ink'
++import React from 'react'
++import { afterEach, describe, expect, it, vi } from 'vitest'
++
++import { ClarifyPrompt } from '../components/prompts.js'
++import { DEFAULT_THEME } from '../theme.js'
++import type { ClarifyReq } from '../types.js'
++
++class WizardFixture {
++  readonly submit = vi.fn()
++  readonly perQuestion = vi.fn()
++  readonly cancel = vi.fn()
++  readonly stdin = Object.assign(new PassThrough(), {
++    isTTY: true,
++    setRawMode: vi.fn(),
++    ref: vi.fn(),
++    unref: vi.fn()
++  })
++
++  readonly request: ClarifyReq = {
++    requestId: 'wizard-fixture',
++    questions: [
++      { qid: 'format', question: 'Choose output format', choices: ['Short', 'Detailed'], multiSelect: false },
++      { qid: 'sections', question: 'Choose sections', choices: ['Intro', 'Examples', 'Summary'], multiSelect: true },
++      { qid: 'notes', question: 'Add a note', choices: null }
++    ]
++  }
++
++  private output = ''
++  private view: ReturnType<typeof renderSync>
++
++  constructor() {
++    const stdout = Object.assign(new PassThrough(), { columns: 100, rows: 35, isTTY: false })
++    stdout.on('data', chunk => {
++      this.output += String(chunk)
++    })
++    this.view = renderSync(
++      <ClarifyPrompt
++        cols={100}
++        onCancel={this.cancel}
++        onQuestionAnswer={this.perQuestion}
++        onSubmitAnswers={this.submit}
++        req={this.request}
++        t={DEFAULT_THEME}
++      />,
++      { stdout: stdout as never, stdin: this.stdin as never, stderr: new PassThrough() as never, patchConsole: false }
++    )
++  }
++
++  get text() {
++    return stripVTControlCharacters(this.output)
++  }
++
++  async key(value: string) {
++    this.stdin.write(value)
++    await new Promise(resolve => setTimeout(resolve, 25))
++  }
++
++  async answerFirstTwo() {
++    await this.key('2')
++    await this.key('1')
++    await this.key('3')
++    await this.key('\x1b[C')
++  }
++
++  close() {
++    this.view.unmount()
++    this.view.cleanup()
++  }
++}
++
++let fixture: WizardFixture | undefined
++
++afterEach(() => {
++  fixture?.close()
++  fixture = undefined
++})
++
++describe('Clarify question wizard', () => {
++  it('collects mixed question types and sends one aggregate response only after review', async () => {
++    fixture = new WizardFixture()
++    await vi.waitFor(() => expect(fixture!.text).toContain('[ Next ]'))
++    await fixture.answerFirstTwo()
++    await fixture.key('Keep examples concise')
++    await fixture.key('\r')
++    expect(fixture.perQuestion).not.toHaveBeenCalled()
++    expect(fixture.submit).not.toHaveBeenCalled()
++    expect(fixture.text).toContain('Review answers')
++    expect(fixture.text).toContain('[ Submit answers ]')
++    await fixture.key('\r')
++    expect(fixture.submit).toHaveBeenCalledExactlyOnceWith(
++      {
++        format: 'Detailed',
++        sections: '["Intro","Summary"]',
++        notes: 'Keep examples concise'
++      },
++      'submitted'
++    )
++  })
++
++  it('restores selections when moving back and allows edits before submission', async () => {
++    fixture = new WizardFixture()
++    await fixture.key('2')
++    await fixture.key('1')
++    await fixture.key('3')
++    await fixture.key('\x1b[D')
++    await fixture.key('1')
++    await fixture.key('3')
++    await fixture.key('\x1b[C')
++    await fixture.key('\r')
++    await fixture.key('\r')
++    expect(fixture.submit).toHaveBeenCalledExactlyOnceWith(
++      { format: 'Short', sections: '["Intro"]', notes: '' },
++      'submitted'
++    )
++    expect(fixture.perQuestion).not.toHaveBeenCalled()
++  })
++
++  it('allows leaving a question open without silently accepting a highlighted default', async () => {
++    fixture = new WizardFixture()
++    await fixture.key('\x1b[C')
++    await fixture.key('\x1b[C')
++    await fixture.key('\r')
++    await fixture.key('\r')
++    expect(fixture.submit).toHaveBeenCalledExactlyOnceWith({ format: '', sections: '', notes: '' }, 'submitted')
++  })
++
++  it('returns partial choices with a cancelled outcome when exiting', async () => {
++    fixture = new WizardFixture()
++    await fixture.key('2')
++    await fixture.key('3')
++    await fixture.key('\x1b')
++    await vi.waitFor(() =>
++      expect(fixture!.submit).toHaveBeenCalledExactlyOnceWith(
++        { format: 'Detailed', sections: '["Summary"]' },
++        'cancelled'
++      )
++    )
++    expect(fixture.perQuestion).not.toHaveBeenCalled()
++  })
++
++  it('returns from review to a selected question and preserves the other answers', async () => {
++    fixture = new WizardFixture()
++    await fixture.answerFirstTwo()
++    await fixture.key('A note')
++    await fixture.key('\r')
++
++    for (let index = 0; index < 3; index += 1) {
++      await fixture.key('\x1b[A')
++    }
++
++    await fixture.key('\r')
++    await fixture.key('1')
++    await fixture.key('\x1b[C')
++    await fixture.key('\r')
++    await fixture.key('\r')
++    expect(fixture.submit).toHaveBeenCalledExactlyOnceWith(
++      { format: 'Short', sections: '["Intro","Summary"]', notes: 'A note' },
++      'submitted'
++    )
++  })
++})
+diff --git a/ui-tui/src/__tests__/clarifyWizardFlow.test.tsx b/ui-tui/src/__tests__/clarifyWizardFlow.test.tsx
+new file mode 100644
+index 0000000000..0400ee82a9
+--- /dev/null
++++ b/ui-tui/src/__tests__/clarifyWizardFlow.test.tsx
+@@ -0,0 +1,160 @@
++import { EventEmitter } from 'node:events'
++import { PassThrough } from 'node:stream'
++
++import { renderSync } from '@hermes/ink'
++import { useStore } from '@nanostores/react'
++import React from 'react'
++import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
++
++import { $overlayState, getOverlayState, resetOverlayState } from '../app/overlayStore.js'
++import { resetServerRequestsForTests } from '../app/serverRequestStore.js'
++import { turnController } from '../app/turnController.js'
++import { getTurnState } from '../app/turnStore.js'
++import { patchUiState, resetUiState } from '../app/uiStore.js'
++import { useMainApp } from '../app/useMainApp.js'
++import { ClarifyPrompt } from '../components/prompts.js'
++import { DEFAULT_THEME } from '../theme.js'
++
++class BatchGatewayFixture {
++  app!: ReturnType<typeof useMainApp>
++  output = ''
++  readonly response = vi.fn()
++  readonly gateway = Object.assign(new EventEmitter(), {
++    attached: true,
++    isCanonical: true,
++    drain: () => {},
++    getLogTail: () => '',
++    kill: () => {},
++    recordLog: () => {},
++    request: vi.fn((_method: string): Promise<unknown> => new Promise(() => {}))
++  })
++
++  readonly stdin = Object.assign(new PassThrough(), { isTTY: true, setRawMode: vi.fn(), ref: vi.fn(), unref: vi.fn() })
++  readonly view: ReturnType<typeof renderSync>
++
++  constructor() {
++    const owner = this
++
++    function Harness() {
++      owner.app = useMainApp(owner.gateway as never)
++      const overlay = useStore($overlayState)
++
++      return overlay.clarify ? (
++        <ClarifyPrompt
++          onCancel={owner.app.appActions.cancelClarify}
++          onQuestionAnswer={owner.app.appActions.answerClarifyQuestion}
++          onSubmitAnswers={owner.app.appActions.submitClarifyAnswers}
++          req={overlay.clarify}
++          t={DEFAULT_THEME}
++        />
++      ) : null
++    }
++
++    const stream = () => Object.assign(new PassThrough(), { columns: 100, rows: 35, isTTY: false })
++    const stdout = stream()
++    stdout.on('data', chunk => {
++      this.output += String(chunk)
++    })
++    this.view = renderSync(<Harness />, {
++      stdin: this.stdin as never,
++      stdout: stdout as never,
++      stderr: stream() as never,
++      patchConsole: false
++    })
++    patchUiState({ sid: 'batch-session', storedSid: 'batch-session', gatewayConnected: true })
++  }
++
++  ask() {
++    this.gateway.emit('request', {
++      id: 'batch-request',
++      method: 'clarify',
++      params: {
++        session_id: 'batch-session',
++        questions: [
++          { qid: 'one', question: 'Choose a format', choices: ['Short', 'Long'] },
++          { qid: 'two', question: 'Choose sections', choices: ['Intro', 'Conclusion'], multi_select: true }
++        ]
++      },
++      respond: this.response,
++      fail: vi.fn()
++    })
++  }
++
++  async key(text: string) {
++    this.stdin.write(text)
++    await vi.advanceTimersByTimeAsync(50)
++  }
++
++  close() {
++    this.view.unmount()
++    this.view.cleanup()
++  }
++}
++
++let fixture: BatchGatewayFixture
++
++beforeEach(() => {
++  vi.useFakeTimers()
++  resetUiState()
++  resetOverlayState()
++  resetServerRequestsForTests()
++  turnController.fullReset()
++  fixture = new BatchGatewayFixture()
++})
++
++afterEach(() => {
++  fixture.close()
++  turnController.fullReset()
++  resetOverlayState()
++  resetUiState()
++  resetServerRequestsForTests()
++  vi.useRealTimers()
++})
++
++describe('Question wizard transport', () => {
++  it('keeps navigation local and sends exactly one result frame on final submit', async () => {
++    await vi.advanceTimersByTimeAsync(50)
++    fixture.ask()
++    await vi.advanceTimersByTimeAsync(50)
++    await fixture.key('2')
++    await fixture.key('1')
++    await fixture.key('\x1b[C')
++    expect(fixture.response).not.toHaveBeenCalled()
++    expect(fixture.gateway.request.mock.calls.filter(([method]) => method.startsWith('clarify.'))).toEqual([])
++    await fixture.key('\r')
++    expect(fixture.response, fixture.output).toHaveBeenCalledExactlyOnceWith({
++      answers: { one: 'Long', two: '["Intro"]' },
++      outcome: 'submitted'
++    })
++    expect(getOverlayState().clarify).toBeNull()
++    const transcript = [...fixture.app.appTranscript.historyItems, ...getTurnState().streamSegments]
++    expect(transcript.map(row => row.text).join('\n')).toContain('Choose sections')
++    fixture.app.appActions.submitClarifyAnswers({ one: 'Short' }, 'submitted')
++    expect(fixture.response).toHaveBeenCalledOnce()
++  })
++
++  it('preserves partial answers on explicit exit without submitting them as complete', async () => {
++    await vi.advanceTimersByTimeAsync(50)
++    fixture.ask()
++    await vi.advanceTimersByTimeAsync(50)
++    await fixture.key('1')
++    await fixture.key('\x1b')
++    expect(fixture.response).toHaveBeenCalledExactlyOnceWith({ answers: { one: 'Short' }, outcome: 'cancelled' })
++    expect(getOverlayState().clarify).toBeNull()
++  })
++
++  it('does not deliver an answer after the request was withdrawn', async () => {
++    await vi.advanceTimersByTimeAsync(50)
++    fixture.ask()
++    await vi.advanceTimersByTimeAsync(50)
++    const submit = fixture.app.appActions.submitClarifyAnswers
++    fixture.gateway.emit('event', {
++      type: 'request.cancel',
++      payload: { id: 'batch-request' },
++      session_id: 'batch-session'
++    })
++    await vi.advanceTimersByTimeAsync(50)
++    submit({ one: 'Long', two: '["Intro"]' }, 'submitted')
++    expect(fixture.response).not.toHaveBeenCalled()
 +  })
 +})
 diff --git a/ui-tui/src/__tests__/clipboardFeedback.test.ts b/ui-tui/src/__tests__/clipboardFeedback.test.ts
@@ -5742,6 +6479,215 @@ index 0000000000..354ec0cb42
 +    </Text>
 +  )
 +}
+diff --git a/ui-tui/src/components/clarifyWizard.tsx b/ui-tui/src/components/clarifyWizard.tsx
+new file mode 100644
+index 0000000000..bf3fa1f79f
+--- /dev/null
++++ b/ui-tui/src/components/clarifyWizard.tsx
+@@ -0,0 +1,203 @@
++import { Box, Text, useInput } from '@hermes/ink'
++import { useRef, useState } from 'react'
++
++import { ClarifyWizardState } from '../domain/clarifyWizard.js'
++import { useT } from '../i18n/useT.js'
++import { clarifyAnswerText } from '../lib/text.js'
++import type { Theme } from '../theme.js'
++import type { ClarifyReq } from '../types.js'
++
++import { EventRow } from './eventRow.js'
++import { chipRowProps } from './overlayPrimitives.js'
++import { TextInput } from './textInput.js'
++
++export type ClarifyWizardOutcome = 'submitted' | 'cancelled'
++
++export interface ClarifyWizardProps {
++  cols: number
++  req: ClarifyReq
++  t: Theme
++  onSubmitAnswers: (answers: Record<string, string>, outcome: ClarifyWizardOutcome) => void
++}
++
++export function ClarifyWizard({ cols, req, t: baseTheme, onSubmitAnswers }: ClarifyWizardProps) {
++  const T = useT().prompt.clarify
++  const [wizard, setWizard] = useState(() => new ClarifyWizardState(req.questions, req.answers ?? {}))
++  const { cursor, typing } = wizard
++  const sent = useRef(false)
++  const question = wizard.question
++  const choices = question?.choices ?? []
++  const multi = question?.multiSelect === true
++  const draft = wizard.draft
++  const textMode = !wizard.reviewing && (typing || choices.length === 0)
++
++  const theme: Theme = {
++    ...baseTheme,
++    color: {
++      ...baseTheme.color,
++      text: baseTheme.clarify?.text ?? baseTheme.color.text,
++      muted: baseTheme.clarify?.text ?? baseTheme.color.muted,
++      completionCurrentBg: baseTheme.clarify?.selectedBg ?? baseTheme.color.completionCurrentBg
++    }
++  }
++
++  const finish = (outcome: ClarifyWizardOutcome) => {
++    if (sent.current) {
++      return
++    }
++
++    sent.current = true
++    onSubmitAnswers({ ...wizard.answers }, outcome)
++  }
++
++  const actions = wizard.reviewing
++    ? [() => finish('submitted'), () => setWizard(current => current.go(current.page - 1)), () => finish('cancelled')]
++    : [
++        () => setWizard(current => current.editText(true)),
++        () => setWizard(current => current.next()),
++        () => setWizard(current => current.go(current.page - 1)),
++        () => setWizard(current => current.skip()),
++        () => finish('cancelled')
++      ]
++
++  const actionLabels = wizard.reviewing
++    ? [T.submitAnswers, T.back, T.exit]
++    : [T.other, T.next, T.back, T.leaveOpen, T.exit]
++
++  const itemCount = wizard.reviewing ? wizard.questions.length : choices.length
++
++  useInput((ch, key) => {
++    if (key.escape || (key.ctrl && ch === 'c')) {
++      if (typing) {
++        setWizard(current => current.editText(false))
++      } else {
++        finish('cancelled')
++      }
++
++      return
++    }
++
++    if (key.tab || (!textMode && (key.leftArrow || key.rightArrow))) {
++      if (key.shift || key.leftArrow) {
++        setWizard(current => current.go(current.page - 1))
++      } else if (!wizard.reviewing) {
++        setWizard(current => current.next())
++      }
++
++      return
++    }
++
++    if (textMode || sent.current) {
++      return
++    }
++
++    if (key.upArrow) {
++      setWizard(current => current.focus(Math.max(0, current.cursor - 1)))
++    }
++
++    if (key.downArrow) {
++      setWizard(current => current.focus(Math.min(itemCount + actions.length - 1, current.cursor + 1)))
++    }
++
++    if (key.return) {
++      if (cursor >= itemCount) {
++        actions[cursor - itemCount]?.()
++      } else if (wizard.reviewing) {
++        setWizard(current => current.go(cursor))
++      } else {
++        setWizard(current => current.choose(cursor))
++      }
++
++      return
++    }
++
++    if (!wizard.reviewing && multi && ch === ' ' && cursor < choices.length) {
++      setWizard(current => current.choose(cursor))
++
++      return
++    }
++
++    const number = Number(ch)
++
++    if (/^[1-9]$/.test(ch) && number <= itemCount) {
++      setWizard(current => (current.reviewing ? current.go(number - 1) : current.choose(number - 1)))
++    }
++  })
++
++  return (
++    <Box
++      backgroundColor={theme.clarify?.background}
++      flexDirection="column"
++      paddingX={theme.clarify?.background ? 1 : 0}
++    >
++      <Text bold color={theme.color.text}>
++        {T.wizardTitle}
++      </Text>
++      <Box flexWrap="wrap">
++        {wizard.questions.map((entry, index) => (
++          <Text color={theme.color.text} key={entry.qid} {...chipRowProps(theme, wizard.page === index)}>
++            {` ${index + 1}${wizard.answers[entry.qid] !== undefined ? ' ✓' : ''} `}
++          </Text>
++        ))}
++        <Text color={theme.color.text} {...chipRowProps(theme, wizard.reviewing)}>{` ${T.reviewAnswers} `}</Text>
++      </Box>
++      {wizard.reviewing ? (
++        <Box flexDirection="column">
++          {wizard.questions.map((entry, index) => {
++            const value = wizard.answers[entry.qid]
++
++            return (
++              <Text color={theme.color.text} key={entry.qid} {...chipRowProps(theme, cursor === index)}>
++                {cursor === index ? '▸ ' : '  '}
++                {index + 1}. {entry.question} → {value ? clarifyAnswerText(value, entry.multiSelect) : T.leftOpen}
++              </Text>
++            )
++          })}
++        </Box>
++      ) : question ? (
++        <EventRow createdAt={req.createdAt} t={baseTheme}>
++          <Text bold color={theme.color.text}>
++            {question.question}
++          </Text>
++          {textMode ? (
++            <TextInput
++              color={theme.color.text}
++              columns={Math.max(1, cols - 12)}
++              onChange={value => setWizard(current => current.text(value))}
++              onSubmit={value => setWizard(current => current.text(value).next())}
++              value={draft.custom || (!multi ? (wizard.answers[question.qid] ?? '') : '')}
++            />
++          ) : (
++            <Box flexDirection="column">
++              {choices.map((choice, index) => (
++                <Text color={theme.color.text} key={index} {...chipRowProps(theme, cursor === index)}>
++                  {cursor === index ? '▸ ' : '  '}
++                  {multi
++                    ? draft.picked.includes(choice)
++                      ? '[x] '
++                      : '[ ] '
++                    : wizard.answers[question.qid] === choice
++                      ? '(●) '
++                      : '( ) '}
++                  {index + 1}. {choice}
++                </Text>
++              ))}
++            </Box>
++          )}
++        </EventRow>
++      ) : null}
++      <Box flexDirection="column" paddingLeft={2}>
++        {actionLabels.map((label, index) => (
++          <Text
++            color={theme.color.text}
++            key={index}
++            {...chipRowProps(theme, !textMode && cursor === itemCount + index)}
++          >
++            {!textMode && cursor === itemCount + index ? '▸ ' : '  '}[ {label} ]
++          </Text>
++        ))}
++      </Box>
++      <Text color={theme.color.muted}>{textMode ? T.wizardTypingHint : T.wizardHint}</Text>
++    </Box>
++  )
++}
 diff --git a/ui-tui/src/components/eventRow.tsx b/ui-tui/src/components/eventRow.tsx
 new file mode 100644
 index 0000000000..6d7e9ef416
@@ -5845,6 +6791,113 @@ index 0000000000..73491bf531
 +  const overlay = useStore($overlayState)
 +
 +  return ui.busy && !hasPromptOpen(overlay) ? <TickingClock key={ui.sid} theme={ui.theme} /> : null
++}
+diff --git a/ui-tui/src/domain/clarifyWizard.ts b/ui-tui/src/domain/clarifyWizard.ts
+new file mode 100644
+index 0000000000..ded97bee80
+--- /dev/null
++++ b/ui-tui/src/domain/clarifyWizard.ts
+@@ -0,0 +1,101 @@
++import { clarifyRevisitState } from '../lib/text.js'
++import type { ClarifyQuestion } from '../types.js'
++
++/** Local drafts stay editable until the whole wizard is submitted. */
++export class ClarifyWizardState {
++  constructor(
++    readonly questions: ClarifyQuestion[],
++    readonly answers: Record<string, string> = {},
++    readonly page = 0,
++    readonly cursor = 0,
++    readonly typing = false
++  ) {}
++
++  get question() {
++    return this.questions[this.page]
++  }
++  get reviewing() {
++    return this.page === this.questions.length
++  }
++
++  get draft() {
++    const question = this.question
++
++    return clarifyRevisitState(
++      question?.choices ?? [],
++      question ? this.answers[question.qid] : undefined,
++      question?.multiSelect
++    )
++  }
++
++  private withAnswer(value: string) {
++    const question = this.question
++
++    return question
++      ? new ClarifyWizardState(
++          this.questions,
++          { ...this.answers, [question.qid]: value },
++          this.page,
++          this.cursor,
++          this.typing
++        )
++      : this
++  }
++
++  go(page: number) {
++    const nextPage = Math.max(0, Math.min(page, this.questions.length))
++
++    return new ClarifyWizardState(
++      this.questions,
++      this.answers,
++      nextPage,
++      nextPage === this.questions.length ? this.questions.length : 0
++    )
++  }
++
++  focus(cursor: number) {
++    return new ClarifyWizardState(this.questions, this.answers, this.page, cursor, this.typing)
++  }
++
++  editText(typing: boolean) {
++    return new ClarifyWizardState(this.questions, this.answers, this.page, this.cursor, typing)
++  }
++
++  next() {
++    const current = this.question && this.answers[this.question.qid] === undefined ? this.withAnswer('') : this
++
++    return current.go(this.page + 1)
++  }
++
++  skip() {
++    return this.withAnswer('').next()
++  }
++
++  choose(index: number) {
++    const choice = this.question?.choices?.[index]
++
++    if (choice === undefined) {
++      return this
++    }
++
++    if (!this.question?.multiSelect) {
++      return this.withAnswer(choice).next()
++    }
++
++    const { picked, custom } = this.draft
++    const selected = picked.includes(choice) ? picked.filter(value => value !== choice) : [...picked, choice]
++    const values = [...selected, ...(custom ? [custom] : [])]
++
++    return this.withAnswer(values.length ? JSON.stringify(values) : '')
++  }
++
++  text(value: string) {
++    if (!this.question?.multiSelect) {
++      return this.withAnswer(value)
++    }
++
++    const values = [...this.draft.picked, ...(value.trim() ? [value.trim()] : [])]
++
++    return this.withAnswer(values.length ? JSON.stringify(values) : '')
++  }
 +}
 diff --git a/ui-tui/src/domain/serviceNotifications.ts b/ui-tui/src/domain/serviceNotifications.ts
 new file mode 100644

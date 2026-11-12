@@ -13,6 +13,7 @@ reviewer has a separate explicit host-patch step; evaluation runs only on reques
 | Refusal retry (`plugins/refusal-retry/`) | When the provider's safety filter refuses a request and no fallback provider is configured, the same request is sent again after 10 s and after 60 s; the third refusal ends the turn as before |
 | Repo guard (`plugins/repo-guard/`) | A chat working inside one git repository asks you before any tool call reaches another repository (each project keeps its own chat) |
 | Optional skill notes | Extended `hermes-agent` skill notes |
+| Question wizard | Batched selectors and checkboxes, Back/Next, editable review, one final submission; see [question wizard](docs/question-wizard.md) |
 | Optional response review | Local Heretic review, separate attributed output, independent primary-agent assessment; see [response review](docs/response-review.md) |
 | Capability evaluation (preparation stage) | Metadata inventory, synthetic comparison inputs and typed outcome checks; no automatic model runs, rankings or archival; see [capability evaluation](docs/capability-evaluation.md) |
 

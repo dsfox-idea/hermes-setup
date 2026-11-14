@@ -1834,7 +1834,7 @@ index 9de4c52c03..f13a11c485 100644
            t={theme}
          />
 diff --git a/ui-tui/src/components/messageLine.tsx b/ui-tui/src/components/messageLine.tsx
-index def92f2185..7713d2d09f 100644
+index 135448153f..0b67c36ffc 100644
 --- a/ui-tui/src/components/messageLine.tsx
 +++ b/ui-tui/src/components/messageLine.tsx
 @@ -8,6 +8,7 @@ import { hasLeadGap } from '../domain/blockLayout.js'
@@ -1845,7 +1845,7 @@ index def92f2185..7713d2d09f 100644
  import { ROLE } from '../domain/roles.js'
  import { useT } from '../i18n/useT.js'
  import { transcriptBodyWidth, transcriptGutterWidth } from '../lib/inputMetrics.js'
-@@ -16,34 +17,16 @@ import { type GaugeStyle, hasUsageGauge, splitUsageGaugeLine } from '../lib/usag
+@@ -15,34 +16,16 @@ import { boundedLiveRenderText, compactPreview, isPasteBackedText } from '../lib
  import type { Theme } from '../theme.js'
  import type { ActiveTool, DetailsMode, Msg, SectionVisibility } from '../types.js'
  
@@ -1882,7 +1882,7 @@ index def92f2185..7713d2d09f 100644
  export const MessageLine = memo(function MessageLine({
    cols,
    compact,
-@@ -56,7 +39,6 @@ export const MessageLine = memo(function MessageLine({
+@@ -55,7 +38,6 @@ export const MessageLine = memo(function MessageLine({
    reasoningActive = false,
    sections,
    t,
@@ -1890,7 +1890,7 @@ index def92f2185..7713d2d09f 100644
    tools = []
  }: MessageLineProps) {
    const T = useT().chatBits.messageLine
-@@ -79,20 +61,48 @@ export const MessageLine = memo(function MessageLine({
+@@ -78,20 +60,48 @@ export const MessageLine = memo(function MessageLine({
    // block that renders nothing — e.g. a tool trail hidden by /details — emits
    // no floating gap. Streaming-safe: the gap is derived from the stable
    // predecessor, never this block's own live content. See domain/blockLayout.
@@ -1946,7 +1946,7 @@ index def92f2185..7713d2d09f 100644
      )
    }
  
-@@ -101,6 +111,7 @@ export const MessageLine = memo(function MessageLine({
+@@ -100,6 +110,7 @@ export const MessageLine = memo(function MessageLine({
        <Box flexDirection="column" marginTop={leadGap ? 1 : 0}>
          <ToolTrail
            commandOverride={detailsModeCommandOverride}
@@ -1954,7 +1954,7 @@ index def92f2185..7713d2d09f 100644
            detailsMode={detailsMode}
            preferExpandedThinking={liveDetails}
            reasoning={thinking}
-@@ -109,6 +120,7 @@ export const MessageLine = memo(function MessageLine({
+@@ -108,6 +119,7 @@ export const MessageLine = memo(function MessageLine({
            reasoningTokens={msg.thinkingTokens}
            sections={sections}
            t={t}
@@ -1962,7 +1962,7 @@ index def92f2185..7713d2d09f 100644
            tools={tools}
            toolTokens={msg.toolTokens}
            trail={msg.tools ?? []}
-@@ -132,16 +144,29 @@ export const MessageLine = memo(function MessageLine({
+@@ -131,16 +143,29 @@ export const MessageLine = memo(function MessageLine({
      const preview = compactPreview(stripped, maxChars) || T.emptyToolResult
  
      return (
@@ -2002,7 +2002,7 @@ index def92f2185..7713d2d09f 100644
        </Box>
      )
    }
-@@ -152,13 +177,13 @@ export const MessageLine = memo(function MessageLine({
+@@ -151,13 +176,13 @@ export const MessageLine = memo(function MessageLine({
      const eventGutterWidth = transcriptGutterWidth('system', t.brand.prompt)
  
      return (
@@ -2023,7 +2023,7 @@ index def92f2185..7713d2d09f 100644
        </Box>
      )
    }
-@@ -264,22 +289,18 @@ export const MessageLine = memo(function MessageLine({
+@@ -256,22 +281,18 @@ export const MessageLine = memo(function MessageLine({
    // against the prose around it.
    const isDiffSegment = msg.kind === 'diff'
  
@@ -2049,7 +2049,7 @@ index def92f2185..7713d2d09f 100644
              detailsMode={detailsMode}
              preferExpandedThinking={liveDetails}
              reasoning={thinking}
-@@ -287,6 +308,7 @@ export const MessageLine = memo(function MessageLine({
+@@ -279,6 +300,7 @@ export const MessageLine = memo(function MessageLine({
              reasoningTokens={msg.thinkingTokens}
              sections={sections}
              t={t}
@@ -2057,16 +2057,28 @@ index def92f2185..7713d2d09f 100644
              toolTokens={msg.toolTokens}
              trail={msg.tools}
            />
-@@ -294,7 +316,7 @@ export const MessageLine = memo(function MessageLine({
+@@ -286,36 +308,28 @@ export const MessageLine = memo(function MessageLine({
        )}
  
        {showResponseSeparator && (
 -        <Box marginBottom={1}>
+-          <NoSelect flexShrink={0} fromLeftEdge width={gutterWidth}>
+-            <Text color={t.color.border}>└─ </Text>
+-          </NoSelect>
+-          <Text color={t.color.muted} dim>
+-            {T.response}
+-          </Text>
 +        <Box marginBottom={compact ? 0 : 1}>
-           <NoSelect flexShrink={0} fromLeftEdge width={gutterWidth}>
-             <Text color={t.color.border}>└─ </Text>
-           </NoSelect>
-@@ -304,26 +326,14 @@ export const MessageLine = memo(function MessageLine({
++          <EventRow createdAt={msg.createdAt} stamp={false} t={t}>
++            <Box>
++              <NoSelect flexShrink={0} fromLeftEdge width={gutterWidth}>
++                <Text color={t.color.border}>└─ </Text>
++              </NoSelect>
++              <Text color={t.color.muted} dim>
++                {T.response}
++              </Text>
++            </Box>
++          </EventRow>
          </Box>
        )}
  
@@ -2097,7 +2109,7 @@ index def92f2185..7713d2d09f 100644
      </Box>
    )
  })
-@@ -378,7 +388,5 @@ interface MessageLineProps {
+@@ -350,7 +364,5 @@ interface MessageLineProps {
    reasoningActive?: boolean
    sections?: SectionVisibility
    t: Theme
@@ -4972,10 +4984,10 @@ index 0000000000..8eacef624d
 +})
 diff --git a/ui-tui/src/__tests__/eventTimestamps.test.tsx b/ui-tui/src/__tests__/eventTimestamps.test.tsx
 new file mode 100644
-index 0000000000..723d557a7e
+index 0000000000..347b7ce193
 --- /dev/null
 +++ b/ui-tui/src/__tests__/eventTimestamps.test.tsx
-@@ -0,0 +1,151 @@
+@@ -0,0 +1,168 @@
 +import { PassThrough } from 'node:stream'
 +
 +import { renderSync, stringWidth } from '@hermes/ink'
@@ -5125,6 +5137,23 @@ index 0000000000..723d557a7e
 +  it('marks an unknown historical time instead of inventing the current time', () => {
 +    const lines = EventScreen.render({ role: 'system', text: 'OLD_EVENT' })
 +    expect(lines.find(line => line.includes('OLD_EVENT'))).toMatch(/^--:--:--\s/)
++  })
++
++  it('aligns the response separator with the timestamped rows around it', () => {
++    const lines = EventScreen.render({
++      role: 'assistant',
++      text: 'FINAL_REPLY',
++      createdAt,
++      tools: [buildToolTrailLine('terminal', 'SEP_TOOL')],
++      toolCreatedAt: [createdAt]
++    })
++    const separator = lines.find(line => /└─ +Response/.test(line))
++    const reply = lines.find(line => line.includes('FINAL_REPLY'))
++
++    expect(separator, lines.join('\n')).toBeDefined()
++    expect(separator!.indexOf('└─'), lines.join('\n')).toBe(EventTime.gutterWidth)
++    expect(separator).not.toMatch(/\d\d:\d\d:\d\d/)
++    expect(reply).toMatch(/^14:07:32\s/)
 +  })
 +})
 diff --git a/ui-tui/src/__tests__/messageSpacing.test.tsx b/ui-tui/src/__tests__/messageSpacing.test.tsx

@@ -7150,3 +7150,48 @@ index 0000000000..3fc5b5a3d7
 +    return `${hours}:${minutes}:${seconds}`
 +  }
 +}
+diff --git a/ui-tui/src/lib/text.ts b/ui-tui/src/lib/text.ts
+index 9197a7e7e5..4e46ba935e 100644
+--- a/ui-tui/src/lib/text.ts
++++ b/ui-tui/src/lib/text.ts
+@@ -174,9 +174,13 @@ export const toolTrailLabel = (name: string) =>
+     .map(p => p[0]!.toUpperCase() + p.slice(1))
+     .join(' ') || name
+ 
+-export const formatToolCall = (name: string, context = '') => {
++// Room left for the argument preview on one tool row: timestamp gutter, tree rails, glyph,
++// label, quotes and the duration suffix take about 40 columns. Never below the old 64.
++export const toolPreviewWidth = (columns = process.stdout.columns ?? 80) => Math.max(64, columns - 40)
++
++export const formatToolCall = (name: string, context = '', max = toolPreviewWidth()) => {
+   const label = toolTrailLabel(name)
+-  const preview = compactPreview(context, 64)
++  const preview = compactPreview(context, max)
+ 
+   return preview ? `${label}("${preview}")` : label
+ }
+diff --git a/ui-tui/src/__tests__/toolPreviewWidth.test.ts b/ui-tui/src/__tests__/toolPreviewWidth.test.ts
+new file mode 100644
+index 0000000000..901b8e6b7b
+--- /dev/null
++++ b/ui-tui/src/__tests__/toolPreviewWidth.test.ts
+@@ -0,0 +1,19 @@
++import { describe, expect, it } from 'vitest'
++
++import { formatToolCall, toolPreviewWidth } from '../lib/text.js'
++
++const command = 'PY=../installs/844109ed257dabf0/environments/0ab708392d764744b7b12a48e16ec4da/venv/Scripts/python.exe -c "x"'
++
++describe('tool row preview width', () => {
++  it('uses the terminal width instead of a fixed 64 columns', () => {
++    expect(toolPreviewWidth(200)).toBe(160)
++    expect(formatToolCall('terminal', command, toolPreviewWidth(200))).toContain('venv/Scripts/python.exe')
++  })
++
++  it('never shrinks below the old 64 columns on a narrow terminal', () => {
++    expect(toolPreviewWidth(60)).toBe(64)
++    const row = formatToolCall('terminal', command, toolPreviewWidth(60))
++    expect(row).toContain('…')
++    expect(row.length).toBeLessThan(command.length)
++  })
++})

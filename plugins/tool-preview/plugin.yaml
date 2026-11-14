@@ -1,0 +1,4 @@
+name: tool-preview
+version: 0.1.0
+description: "Tool-row argument previews in the TUI follow display.tool_preview_length instead of a fixed 80 characters."
+author: "Dmitry Golubnichiy"

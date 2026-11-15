@@ -20,7 +20,7 @@ class SetupInstallerTests(unittest.TestCase):
         (self.repository / SKILL / "SKILL.md").write_text("new skill\n")
         (self.repository / "skins").mkdir()
         (self.repository / "skins" / "dsfox-skin.yaml").write_text("name: dsfox-skin\n")
-        for name in ("refusal-retry", "repo-guard", "tool-preview"):
+        for name in ("refusal-retry", "repo-guard", "tool-preview", "heretic-route"):
             plugin = self.repository / "plugins" / name
             (plugin / "tests").mkdir(parents=True)
             (plugin / "__init__.py").write_text("def register(ctx): pass\n")
@@ -52,14 +52,14 @@ class SetupInstallerTests(unittest.TestCase):
     def test_plugins_reach_every_profile_without_their_tests(self):
         with patch("setup.shutil.which", return_value="hermes"):
             self.assertTrue(self.installer.install_plugins())
-        for name in ("refusal-retry", "repo-guard", "tool-preview"):
+        for name in ("refusal-retry", "repo-guard", "tool-preview", "heretic-route"):
             for profile in self.installer.profiles:
                 target = profile.home / "plugins" / name
                 self.assertTrue((target / "__init__.py").is_file())
                 self.assertFalse((target / "tests").exists())
                 self.assertTrue(self.installer.plugin_current(profile, name))
             self.assertIn(["work", "plugins", "enable", name, "--no-allow-tool-override"], self.calls)
-        self.assertEqual([c for c in self.calls if "--run-module" in c and "test_this_hermes_fits" in c].__len__(), 2)
+        self.assertEqual([c for c in self.calls if "--run-module" in c and "test_this_hermes_fits" in c].__len__(), 3)
 
     def test_plugin_that_does_not_fit_fails_the_install(self):
         self.check_exit = 1

@@ -1,0 +1,4 @@
+name: heretic-route
+version: 0.1.0
+description: "/heretic answers a message with the local Heretic model through Ollama; the TUI patch routes messages starting with _ to it."
+author: "Dmitry Golubnichiy"

@@ -4,7 +4,7 @@
       "sha256": "aeb1914e6e56c584fd6499a3d378bdca4beb7b2a07d36e7cd52a0d63ecfa106d"
     },
     "patches/hermes-tui.patch": {
-      "sha256": "1e64ac5ba840286e36767029754982b4fd7e9e6682780918d692556be9c47164"
+      "sha256": "d3ff276b4bbf03c03784268cb31994a61e760e5f033eaa6cb431892c3b5e5e8c"
     },
     "patches/response-review-host.patch": {
       "sha256": "27c2f7c3243de69901e2ca16a2e70b18c2c3e02712b340dba97a0aa693c658ba"

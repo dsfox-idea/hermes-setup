@@ -7195,3 +7195,79 @@ index 0000000000..901b8e6b7b
 +    expect(row.length).toBeLessThan(command.length)
 +  })
 +})
+diff --git a/ui-tui/src/__tests__/localRoute.test.ts b/ui-tui/src/__tests__/localRoute.test.ts
+new file mode 100644
+index 0000000000..2989881a7e
+--- /dev/null
++++ b/ui-tui/src/__tests__/localRoute.test.ts
+@@ -0,0 +1,28 @@
++import { describe, expect, it } from 'vitest'
++
++import { toLocalRoute } from '../domain/localRoute.js'
++
++describe('toLocalRoute', () => {
++  it('sends a message that starts with _ to /heretic without the marker', () => {
++    expect(toLocalRoute('_translate this')).toBe('/heretic translate this')
++  })
++
++  it('turns thinking on for __', () => {
++    expect(toLocalRoute('__why is the sky blue')).toBe('/heretic --think why is the sky blue')
++  })
++
++  it('leaves ordinary messages alone', () => {
++    expect(toLocalRoute('hello _world')).toBeNull()
++    expect(toLocalRoute(' _indented')).toBeNull()
++    expect(toLocalRoute('/help')).toBeNull()
++  })
++
++  it('keeps multi-line text after the marker', () => {
++    expect(toLocalRoute('_line one\nline two')).toBe('/heretic line one\nline two')
++  })
++
++  it('passes a bare marker on as an empty command', () => {
++    expect(toLocalRoute('_')).toBe('/heretic')
++    expect(toLocalRoute('__  ')).toBe('/heretic --think')
++  })
++})
+diff --git a/ui-tui/src/app/useSubmission.ts b/ui-tui/src/app/useSubmission.ts
+index ef37f5e049..c6c2579923 100644
+--- a/ui-tui/src/app/useSubmission.ts
++++ b/ui-tui/src/app/useSubmission.ts
+@@ -3,6 +3,7 @@ import { type MutableRefObject, useCallback, useEffect, useRef } from 'react'
+ 
+ import { TYPING_IDLE_MS } from '../config/timing.js'
+ import { expandTokens, imageAttachments } from '../domain/attachments.js'
++import { toLocalRoute } from '../domain/localRoute.js'
+ import { completionToApplyOnSubmit } from '../domain/slash.js'
+ import type { GatewayClient } from '../gatewayClient.js'
+ import type { ShellExecResponse } from '../gatewayTypes.js'
+@@ -334,7 +335,7 @@ export function useSubmission(opts: UseSubmissionOptions) {
+         return sendQueued(input)
+       }
+ 
+-      const full = input
++      const full = toLocalRoute(input) ?? input
+ 
+       if (!full.trim()) {
+         return
+diff --git a/ui-tui/src/domain/localRoute.ts b/ui-tui/src/domain/localRoute.ts
+new file mode 100644
+index 0000000000..d0bf5ab024
+--- /dev/null
++++ b/ui-tui/src/domain/localRoute.ts
+@@ -0,0 +1,15 @@
++// A message that starts with `_` goes to the local Heretic model (`/heretic`, the hermes-setup
++// heretic-route plugin) and never reaches the cloud model; `__` also turns thinking on.
++// The underscores are only the routing marker and are not sent.
++export const LOCAL_ROUTE_COMMAND = '/heretic'
++
++export const toLocalRoute = (text: string): null | string => {
++  if (!text.startsWith('_')) {
++    return null
++  }
++
++  const think = text.startsWith('__')
++  const body = text.replace(/^_+/, '').trim()
++
++  return think ? `${LOCAL_ROUTE_COMMAND} --think ${body}`.trimEnd() : `${LOCAL_ROUTE_COMMAND} ${body}`.trimEnd()
++}

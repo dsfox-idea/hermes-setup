@@ -8,7 +8,7 @@
 `install` copies the skin into every profile, selects it with the TUI interface and
 compact transcript, builds the patched TUI overlay (scripts/tui_overlay.py) and
 installs its gateway hook, then installs and enables the refusal-retry,
-repo-guard and tool-preview plugins.
+repo-guard, tool-preview and heretic-route plugins.
 `--skill` also replaces the profile's hermes-agent skill after backing it up.
 Every step goes through the Hermes CLI or plain file copies; the Hermes checkout
 is never modified.
@@ -30,7 +30,8 @@ REPOSITORY = Path(__file__).resolve().parent.parent
 SKIN = "dsfox-skin"
 SKILL = Path("skills/autonomous-ai-agents/hermes-agent")
 # Plugins installed in every profile, each with the test that proves it fits this Hermes (or None).
-PLUGINS = {"refusal-retry": "test_this_hermes_fits", "repo-guard": None, "tool-preview": "test_this_hermes_fits"}
+PLUGINS = {"refusal-retry": "test_this_hermes_fits", "repo-guard": None, "tool-preview": "test_this_hermes_fits",
+           "heretic-route": "test_this_hermes_fits"}
 PLUGIN_SKIP = ("__pycache__", "tests")
 
 

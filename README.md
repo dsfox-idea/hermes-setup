@@ -13,6 +13,7 @@ reviewer has a separate explicit host-patch step; evaluation runs only on reques
 | Refusal retry (`plugins/refusal-retry/`) | When the provider's safety filter refuses a request and no fallback provider is configured, the same request is sent again after 10 s and after 60 s; the third refusal ends the turn as before |
 | Repo guard (`plugins/repo-guard/`) | A chat working inside one git repository asks you before any tool call reaches another repository (each project keeps its own chat) |
 | Tool preview (`plugins/tool-preview/`) | Tool rows in the TUI show the call's arguments up to `display.tool_preview_length` (0 = no limit, the default) instead of a fixed 80 characters; with the TUI patch the row itself uses the window width |
+| Local Heretic route (`plugins/heretic-route/`) | A TUI message that starts with `_` is answered by the local Heretic model through Ollama (`/heretic`), never by the cloud model; `__` turns thinking on, `/heretic --reset` clears its per-chat history (last 10 exchanges). Needs Ollama with `qwen36-35b-heretic:q5km`; `heretic_route.url` / `heretic_route.model` in config.yaml override the defaults |
 | Optional skill notes | Extended `hermes-agent` skill notes |
 | Question wizard | Batched selectors and checkboxes, Back/Next, editable review, one final submission; see [question wizard](docs/question-wizard.md) |
 | Optional response review | Local Heretic review, separate attributed output, independent primary-agent assessment; see [response review](docs/response-review.md) |
@@ -62,7 +63,7 @@ For every profile (`default` and each one under `profiles/`) the script:
    Hermes at it with `HERMES_TUI_DIR` in the profile's `.env`;
 4. sets `display.tui_status_indicator activity`;
 5. installs the `tui-overlay` gateway hook into `<Hermes home>/hooks/`;
-6. copies `plugins/refusal-retry`, `plugins/repo-guard` and `plugins/tool-preview` into `<profile>/plugins/`,
+6. copies `plugins/refusal-retry`, `plugins/repo-guard`, `plugins/tool-preview` and `plugins/heretic-route` into `<profile>/plugins/`,
    enables them and checks that refusal-retry fits the installed Hermes version.
 
 Options, combinable:
@@ -193,6 +194,7 @@ is not seen.
 | `upstream.json` | Hermes revision the patch was cut from, and the patch checksum |
 | `plugins/repo-guard/` | Repo-guard plugin and its tests (`python3 -m unittest discover -s plugins/repo-guard/tests`) |
 | `plugins/tool-preview/` | Tool-preview plugin and its tests (`hermes --run-module unittest discover -s plugins/tool-preview/tests`) |
+| `plugins/heretic-route/` | Heretic-route plugin and its tests (`hermes --run-module unittest discover -s plugins/heretic-route/tests`) |
 | `plugins/refusal-retry/` | Refusal-retry plugin and its tests (`hermes --run-module unittest discover -s plugins/refusal-retry/tests`) |
 | `plugins/heretic-reviewer/`, `scripts/install_review.py` | Explicit, single-profile installation of local response review |
 | `patches/response-review-host.patch` | Optional Python-host support; unlike the default TUI overlay, applying this modifies the selected source checkout |

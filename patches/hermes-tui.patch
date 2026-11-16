@@ -7197,21 +7197,21 @@ index 0000000000..901b8e6b7b
 +})
 diff --git a/ui-tui/src/__tests__/localRoute.test.ts b/ui-tui/src/__tests__/localRoute.test.ts
 new file mode 100644
-index 0000000000..2989881a7e
+index 0000000000..c4dea0451a
 --- /dev/null
 +++ b/ui-tui/src/__tests__/localRoute.test.ts
-@@ -0,0 +1,28 @@
+@@ -0,0 +1,47 @@
 +import { describe, expect, it } from 'vitest'
 +
-+import { toLocalRoute } from '../domain/localRoute.js'
++import { parseLocalReply, toLocalRoute } from '../domain/localRoute.js'
 +
 +describe('toLocalRoute', () => {
-+  it('sends a message that starts with _ to /heretic without the marker', () => {
-+    expect(toLocalRoute('_translate this')).toBe('/heretic translate this')
++  it('turns a message that starts with _ into a /heretic JSON command without the marker', () => {
++    expect(toLocalRoute('_translate this')).toBe('heretic --json translate this')
 +  })
 +
 +  it('turns thinking on for __', () => {
-+    expect(toLocalRoute('__why is the sky blue')).toBe('/heretic --think why is the sky blue')
++    expect(toLocalRoute('__why is the sky blue')).toBe('heretic --json --think why is the sky blue')
 +  })
 +
 +  it('leaves ordinary messages alone', () => {
@@ -7221,45 +7221,147 @@ index 0000000000..2989881a7e
 +  })
 +
 +  it('keeps multi-line text after the marker', () => {
-+    expect(toLocalRoute('_line one\nline two')).toBe('/heretic line one\nline two')
++    expect(toLocalRoute('_line one\nline two')).toBe('heretic --json line one\nline two')
 +  })
 +
 +  it('passes a bare marker on as an empty command', () => {
-+    expect(toLocalRoute('_')).toBe('/heretic')
-+    expect(toLocalRoute('__  ')).toBe('/heretic --think')
++    expect(toLocalRoute('_')).toBe('heretic --json')
++    expect(toLocalRoute('__  ')).toBe('heretic --json --think')
++  })
++})
++
++describe('parseLocalReply', () => {
++  it('reads the plugin JSON reply', () => {
++    const reply = parseLocalReply(JSON.stringify({ footer: '— heretic', text: 'done', tools: [{ name: 'terminal', preview: 'ls' }] }))
++
++    expect(reply).toEqual({ footer: '— heretic', text: 'done', tools: [{ name: 'terminal', preview: 'ls' }] })
++  })
++
++  it('shows any other output as plain text', () => {
++    expect(parseLocalReply('heretic: old plugin answer')).toEqual({ footer: '', text: 'heretic: old plugin answer', tools: [] })
++    expect(parseLocalReply(undefined).text).toBe('heretic: no output')
++  })
++
++  it('drops malformed tool entries', () => {
++    const reply = parseLocalReply(JSON.stringify({ text: 'x', tools: [null, { preview: 'no name' }, { name: 'file' }] }))
++
++    expect(reply.tools).toEqual([{ name: 'file', preview: '' }])
 +  })
 +})
 diff --git a/ui-tui/src/app/useSubmission.ts b/ui-tui/src/app/useSubmission.ts
-index ef37f5e049..c6c2579923 100644
+index ef37f5e049..3cabdcfeb2 100644
 --- a/ui-tui/src/app/useSubmission.ts
 +++ b/ui-tui/src/app/useSubmission.ts
-@@ -3,6 +3,7 @@ import { type MutableRefObject, useCallback, useEffect, useRef } from 'react'
+@@ -3,12 +3,14 @@ import { type MutableRefObject, useCallback, useEffect, useRef } from 'react'
  
  import { TYPING_IDLE_MS } from '../config/timing.js'
  import { expandTokens, imageAttachments } from '../domain/attachments.js'
-+import { toLocalRoute } from '../domain/localRoute.js'
++import { parseLocalReply, toLocalRoute } from '../domain/localRoute.js'
  import { completionToApplyOnSubmit } from '../domain/slash.js'
  import type { GatewayClient } from '../gatewayClient.js'
- import type { ShellExecResponse } from '../gatewayTypes.js'
-@@ -334,7 +335,7 @@ export function useSubmission(opts: UseSubmissionOptions) {
-         return sendQueued(input)
+-import type { ShellExecResponse } from '../gatewayTypes.js'
++import type { ShellExecResponse, SlashExecResponse } from '../gatewayTypes.js'
+ import { queueItem, type QueueItem } from '../hooks/useQueue.js'
+ import { t } from '../i18n/runtime.js'
+ import { asRpcResult } from '../lib/rpc.js'
++import { buildToolTrailLine } from '../lib/text.js'
+ import { hasInterpolation, INTERPOLATION_RE } from '../protocol/interpolation.js'
+ import type { Msg } from '../types.js'
+ 
+@@ -22,6 +24,8 @@ import { getUiState, patchUiState } from './uiStore.js'
+ import { describeShellExecError } from './userMessages.js'
+ 
+ const DOUBLE_ENTER_MS = 450
++// A local turn runs a whole agent loop on a local model; tool use can take minutes.
++const LOCAL_TURN_TIMEOUT_MS = 30 * 60 * 1000
+ 
+ const spliceMatches = (text: string, matches: RegExpMatchArray[], results: string[]) =>
+   matches.reduceRight((acc, m, i) => acc.slice(0, m.index!) + results[i] + acc.slice(m.index! + m[0].length), text)
+@@ -201,6 +205,43 @@ export function useSubmission(opts: UseSubmissionOptions) {
+     [appendMessage, gw, sys]
+   )
+ 
++  // `_text`: one Heretic turn through the plugin command. The turn is not part of the stored chat,
++  // so its rows live only in this window's transcript.
++  const localTurn = useCallback(
++    (shown: string, command: string, destination = captureDestination()) => {
++      const focused = () => isCurrentDestination(destination)
++      appendMessage({ role: 'user', text: shown })
++      patchUiState({ busy: true, status: 'heretic…' })
++
++      gw.request<SlashExecResponse>('slash.exec', { command, session_id: destination.sid }, LOCAL_TURN_TIMEOUT_MS)
++        .then(raw => {
++          if (!focused()) {
++            return
++          }
++
++          const reply = parseLocalReply(asRpcResult<SlashExecResponse>(raw)?.output)
++          const tools = reply.tools.map(tool => buildToolTrailLine(tool.name, tool.preview))
++
++          appendMessage({ role: 'assistant', text: reply.text, ...(tools.length && { tools }) })
++
++          if (reply.footer) {
++            sys(reply.footer)
++          }
++        })
++        .catch((e: Error) => {
++          if (focused()) {
++            sys(`heretic: ${e.message}`)
++          }
++        })
++        .finally(() => {
++          if (focused()) {
++            patchUiState({ busy: false, status: 'ready' })
++          }
++        })
++    },
++    [appendMessage, gw, sys]
++  )
++
+   // A `{!cmd}` that could not run refuses the whole submit: the model never receives a
+   // placeholder such as `(error)` standing in for output the user expected (dokterdok N22). The
+   // staged row settles as not accepted, so the input stays retained for Alt+K / an edit.
+@@ -340,6 +381,15 @@ export function useSubmission(opts: UseSubmissionOptions) {
+         return
        }
  
--      const full = input
-+      const full = toLocalRoute(input) ?? input
- 
-       if (!full.trim()) {
-         return
++      const local = toLocalRoute(full)
++
++      if (local) {
++        composerActions.pushHistory(full)
++        composerActions.clearIn()
++
++        return localTurn(full, local)
++      }
++
+       // History stores resolved content, not `[[…]]` labels: tokens are cleared
+       // on submit, so recall must be self-contained. Image tokens resolve to
+       // nothing — a detached image can't be re-attached by recalling the text.
+@@ -488,6 +538,7 @@ export function useSubmission(opts: UseSubmissionOptions) {
+       gw,
+       handleBusyInput,
+       interpolate,
++      localTurn,
+       send,
+       sendQueued,
+       shellExec,
 diff --git a/ui-tui/src/domain/localRoute.ts b/ui-tui/src/domain/localRoute.ts
 new file mode 100644
-index 0000000000..d0bf5ab024
+index 0000000000..802e281f9c
 --- /dev/null
 +++ b/ui-tui/src/domain/localRoute.ts
-@@ -0,0 +1,15 @@
-+// A message that starts with `_` goes to the local Heretic model (`/heretic`, the hermes-setup
-+// heretic-route plugin) and never reaches the cloud model; `__` also turns thinking on.
+@@ -0,0 +1,44 @@
++// A message that starts with `_` runs one full agent turn on the local Heretic model (`/heretic`,
++// the hermes-setup heretic-route plugin): same tools and context as the cloud model, but the turn
++// is never stored in the chat, so the cloud model never sees it. `__` also turns thinking on.
 +// The underscores are only the routing marker and are not sent.
-+export const LOCAL_ROUTE_COMMAND = '/heretic'
++export const LOCAL_ROUTE_COMMAND = 'heretic --json'
++
++export interface LocalReply {
++  footer: string
++  text: string
++  tools: { name: string; preview: string }[]
++}
 +
 +export const toLocalRoute = (text: string): null | string => {
 +  if (!text.startsWith('_')) {
@@ -7269,5 +7371,27 @@ index 0000000000..d0bf5ab024
 +  const think = text.startsWith('__')
 +  const body = text.replace(/^_+/, '').trim()
 +
-+  return think ? `${LOCAL_ROUTE_COMMAND} --think ${body}`.trimEnd() : `${LOCAL_ROUTE_COMMAND} ${body}`.trimEnd()
++  return `${LOCAL_ROUTE_COMMAND}${think ? ' --think' : ''} ${body}`.trimEnd()
++}
++
++// The plugin answers `--json` with {text, footer, tools}; anything else (an older plugin, a
++// gateway error) is shown as plain text.
++export const parseLocalReply = (output: string | undefined): LocalReply => {
++  try {
++    const value = JSON.parse(output ?? '') as Partial<LocalReply>
++
++    if (value && typeof value.text === 'string') {
++      return {
++        footer: typeof value.footer === 'string' ? value.footer : '',
++        text: value.text,
++        tools: Array.isArray(value.tools)
++          ? value.tools.filter(tool => tool && typeof tool.name === 'string').map(tool => ({ name: tool.name, preview: String(tool.preview ?? '') }))
++          : []
++      }
++    }
++  } catch {
++    // Not JSON: fall through to the plain text below.
++  }
++
++  return { footer: '', text: (output ?? '').trim() || 'heretic: no output', tools: [] }
 +}

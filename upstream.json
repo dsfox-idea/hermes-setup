@@ -12,7 +12,7 @@
   },
   "patch": {
     "path": "patches/hermes-tui.patch",
-    "sha256": "d3ff276b4bbf03c03784268cb31994a61e760e5f033eaa6cb431892c3b5e5e8c"
+    "sha256": "3dbf2a148f1dc586dda5cd3814ae85154d39c307a9b6b2e6cd2d4930dc1d038c"
   },
   "response_review": {
     "patch_sha256": "27c2f7c3243de69901e2ca16a2e70b18c2c3e02712b340dba97a0aa693c658ba",

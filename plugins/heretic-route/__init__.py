@@ -1,6 +1,6 @@
-"""``/heretic``: answer a message with the local Heretic model (Ollama), not the cloud. See ``route.py``."""
+"""``/heretic``: one full agent turn on the local Heretic model, hidden from the cloud model. See ``route.py``."""
 
-from .route import DEFAULT_MODEL, DEFAULT_URL, HereticRoute, History, history_directory
+from .route import DEFAULT_ALIAS, HereticRoute, HereticRunner, ViewStore, view_directory
 
 
 def _settings() -> dict:
@@ -10,14 +10,10 @@ def _settings() -> dict:
 
 
 def register(ctx) -> None:
-    settings = _settings()
-    route = HereticRoute(
-        History(history_directory()),
-        url=str(settings.get("url") or DEFAULT_URL),
-        model=str(settings.get("model") or DEFAULT_MODEL),
-    )
+    alias = str(_settings().get("alias") or DEFAULT_ALIAS)
+    route = HereticRoute(ViewStore(view_directory()), HereticRunner(alias))
     ctx.register_command(
         "heretic", route,
-        description="Ask the local Heretic model (free, no cloud). In the TUI: _text, or __text with thinking",
+        description="Run this turn on the local Heretic model, hidden from the cloud. In the TUI: _text, or __text with thinking",
         args_hint="[--think] [--reset] <text>",
     )

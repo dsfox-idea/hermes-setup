@@ -16,8 +16,9 @@ from artifact_policy import ArtifactPolicy
 
 class SetupSnapshot:
     INVENTORY = "snapshot-inventory.json"
-    # The repository is public: personal rules (SOUL.md), memory deployment notes and the
-    # skill references that describe one owner's machines are never exported.
+    # The repository is public: memory deployment notes and the skill references that
+    # describe one owner's machines are never exported. soul/SOUL.md is maintained by hand,
+    # not exported from a profile.
     MANAGED_FILES = {"config.example.json", "skins/dsfox-skin.yaml", "upstream.json", "patches/hermes-tui.patch"}
     MANAGED_FILES.add("patches/response-review-host.patch")
     HOST_PATCH_FILES = (

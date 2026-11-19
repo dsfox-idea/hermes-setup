@@ -62,8 +62,11 @@ For every profile (`default` and each one under `profiles/`) the script:
 3. builds the patched TUI into `<Hermes home>/tui-overlay/ui-tui-<version>` and points
    Hermes at it with `HERMES_TUI_DIR` in the profile's `.env`;
 4. sets `display.tui_status_indicator activity`;
-5. installs the `tui-overlay` gateway hook into `<Hermes home>/hooks/`;
-6. copies `plugins/refusal-retry`, `plugins/repo-guard`, `plugins/tool-preview` and `plugins/heretic-route` into `<profile>/plugins/`,
+5. makes `soul/SOUL.md` the profile's `SOUL.md` (the agent's standing rules, in
+   Russian); a different existing `SOUL.md` is first copied to
+   `<profile>/backups/hermes-setup-<timestamp>/`;
+6. installs the `tui-overlay` gateway hook into `<Hermes home>/hooks/`;
+7. copies `plugins/refusal-retry`, `plugins/repo-guard`, `plugins/tool-preview` and `plugins/heretic-route` into `<profile>/plugins/`,
    enables them and checks that refusal-retry fits the installed Hermes version.
 
 Options, combinable:
@@ -149,7 +152,8 @@ python3 -I scripts/setup.py uninstall  # Windows: py -3 -I scripts\setup.py unin
 ```
 
 This restores the `default` skin and the stock TUI in every profile and removes
-the hook. Backups from `--skill` stay in `<profile>/backups/`.
+the hook. `SOUL.md` stays; the previous one, and backups from `--skill`, are in
+`<profile>/backups/`.
 
 ## Platform notes
 
@@ -190,6 +194,7 @@ is not seen.
 | --- | --- |
 | `scripts/setup.py`, `scripts/tui_overlay.py` | Installer and patched-TUI builder (`tui_overlay.py status/ensure/disable` handles the TUI alone) |
 | `hooks/tui-overlay/` | Gateway hook that rebuilds the TUI after updates |
+| `soul/SOUL.md` | Default agent rules installed into every profile (stock Hermes intro, then 47 working rules in Russian) |
 | `config.example.json` | Non-secret configuration example; set single keys with `hermes config set`, never copy it over a profile |
 | `upstream.json` | Hermes revision the patch was cut from, and the patch checksum |
 | `plugins/repo-guard/` | Repo-guard plugin and its tests (`python3 -m unittest discover -s plugins/repo-guard/tests`) |

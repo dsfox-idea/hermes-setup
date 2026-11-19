@@ -20,6 +20,8 @@ class SetupInstallerTests(unittest.TestCase):
         (self.repository / SKILL / "SKILL.md").write_text("new skill\n")
         (self.repository / "skins").mkdir()
         (self.repository / "skins" / "dsfox-skin.yaml").write_text("name: dsfox-skin\n")
+        (self.repository / "soul").mkdir()
+        (self.repository / "soul" / "SOUL.md").write_text("shared rules\n")
         for name in ("refusal-retry", "repo-guard", "tool-preview", "heretic-route"):
             plugin = self.repository / "plugins" / name
             (plugin / "tests").mkdir(parents=True)
@@ -65,6 +67,21 @@ class SetupInstallerTests(unittest.TestCase):
         self.check_exit = 1
         with patch("setup.shutil.which", return_value="hermes"), self.assertLogs("setup", "ERROR"):
             self.assertFalse(self.installer.install_plugins())
+
+    def test_soul_reaches_every_profile_and_a_different_one_is_backed_up(self):
+        (self.home / "SOUL.md").write_text("my own rules\n")
+        self.installer.install_soul()
+        for profile in self.installer.profiles:
+            self.assertEqual((profile.home / "SOUL.md").read_text(), "shared rules\n")
+            self.assertTrue(self.installer.soul_current(profile))
+        backups = list((self.home / "backups").glob("hermes-setup-*/SOUL.md"))
+        self.assertEqual([b.read_text() for b in backups], ["my own rules\n"])
+        self.assertFalse((self.home / "profiles" / "work" / "backups").exists())
+
+    def test_current_soul_is_left_alone(self):
+        (self.home / "SOUL.md").write_text("shared rules\n")
+        self.installer.install_soul()
+        self.assertFalse((self.home / "backups").exists())
 
     def test_skill_is_backed_up_before_it_is_replaced(self):
         old = self.home / "profiles" / "work" / SKILL

@@ -11,8 +11,9 @@ from unrelated work repositories.
 - Honor the active session's authorization requirements. Do not treat this
   standing preference as permission to publish to another destination, make this
   repository private or public, or send conversation contents elsewhere.
-- The repository is public: never commit personal rules (`SOUL.md`), memory notes,
-  host names, addresses, home paths or account names. The pre-push gate refuses a
+- The repository is public: never commit memory notes, host names, addresses, home
+  paths or account names. `soul/SOUL.md` is the published default rules file (the
+  owner chose to share it); it must stay free of personal identity and machine facts. The pre-push gate refuses a
   tree that contains strings from the local `publication.denyList` file.
 - Commit with the owner's global git identity, on the current branch. Do not
   create branches, rewrite history, or force-push without an explicit request.

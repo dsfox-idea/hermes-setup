@@ -29,6 +29,7 @@ log = logging.getLogger("setup")
 REPOSITORY = Path(__file__).resolve().parent.parent
 SKIN = "dsfox-skin"
 SKILL = Path("skills/autonomous-ai-agents/hermes-agent")
+SOUL = Path("SOUL.md")
 # Plugins installed in every profile, each with the test that proves it fits this Hermes (or None).
 PLUGINS = {"refusal-retry": "test_this_hermes_fits", "repo-guard": None, "tool-preview": "test_this_hermes_fits",
            "heretic-route": "test_this_hermes_fits"}
@@ -120,6 +121,20 @@ class SetupInstaller:
                 ok = False
         return ok
 
+    def soul_current(self, profile: Profile) -> bool:
+        target = profile.home / SOUL
+        return target.is_file() and target.read_bytes() == (self.repository / "soul" / SOUL).read_bytes()
+
+    def install_soul(self) -> None:
+        """Make the repository's rules file every profile's SOUL.md; a differing one is backed up first."""
+        source = self.repository / "soul" / SOUL
+        for profile in self.profiles:
+            if self.soul_current(profile):
+                continue
+            profile.backup(SOUL, self.stamp)
+            shutil.copyfile(source, profile.home / SOUL)
+            log.info("SOUL.md installed in profile %s", profile.name)
+
     def install_skill(self) -> None:
         for profile in self.profiles:
             profile.backup(SKILL, self.stamp)
@@ -160,11 +175,13 @@ def main() -> int:
         print(f"patched TUI current: {overlay.current()}")
         for name in PLUGINS:
             print(f"{name} plugin current: {all(installer.plugin_current(p, name) for p in installer.profiles)}")
+        print(f"SOUL.md current: {all(installer.soul_current(p) for p in installer.profiles)}")
         return 0
     if arguments.action == "uninstall":
         installer.uninstall()
         return 0
     installer.install_skin()
+    installer.install_soul()
     overlay_ok = installer.install_overlay()
     plugin_ok = installer.install_plugins()
     if arguments.skill:

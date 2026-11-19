@@ -78,6 +78,19 @@ class SetupInstallerTests(unittest.TestCase):
         self.assertEqual([b.read_text() for b in backups], ["my own rules\n"])
         self.assertFalse((self.home / "profiles" / "work" / "backups").exists())
 
+    def test_keep_soul_skips_the_rules_file(self):
+        import setup
+        (self.home / "SOUL.md").write_text("my own rules\n")
+        with patch.object(setup.HermesInstall, "detect", return_value=self.installer.install), \
+                patch.object(setup, "SetupInstaller", return_value=self.installer), \
+                patch.object(self.installer, "install_skin"), \
+                patch.object(self.installer, "install_overlay", return_value=True), \
+                patch.object(self.installer, "install_plugins", return_value=True), \
+                patch("sys.argv", ["setup.py", "install", "--keep-soul"]):
+            self.assertEqual(setup.main(), 0)
+        self.assertEqual((self.home / "SOUL.md").read_text(), "my own rules\n")
+        self.assertFalse((self.home / "backups").exists())
+
     def test_current_soul_is_left_alone(self):
         (self.home / "SOUL.md").write_text("shared rules\n")
         self.installer.install_soul()

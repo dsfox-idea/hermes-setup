@@ -75,6 +75,7 @@ Options, combinable:
 | --- | --- |
 | `--timezone Europe/Berlin` | Sets `timezone` in every profile |
 | `--skill` | Replaces the `hermes-agent` skill with `skills/autonomous-ai-agents/hermes-agent` |
+| `--keep-soul` | Leaves every profile's `SOUL.md` as it is (step 5 is skipped) |
 
 `--skill` first backs up the replaced skill to
 `<profile>/backups/hermes-setup-<timestamp>/`.

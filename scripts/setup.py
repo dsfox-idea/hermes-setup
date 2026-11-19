@@ -164,6 +164,7 @@ def main() -> int:
     parser.add_argument("action", choices=("install", "status", "uninstall"))
     parser.add_argument("--skill", action="store_true", help="also replace the hermes-agent skill (backed up)")
     parser.add_argument("--timezone", help="also set the timezone, e.g. Europe/Berlin")
+    parser.add_argument("--keep-soul", action="store_true", help="leave every profile's SOUL.md as it is")
     parser.add_argument("--hermes-home")
     arguments = parser.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(levelname)s %(message)s")
@@ -181,7 +182,8 @@ def main() -> int:
         installer.uninstall()
         return 0
     installer.install_skin()
-    installer.install_soul()
+    if not arguments.keep_soul:
+        installer.install_soul()
     overlay_ok = installer.install_overlay()
     plugin_ok = installer.install_plugins()
     if arguments.skill:
